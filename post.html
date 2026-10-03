@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>加载中…</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="site-title" id="site-title"></a>
+      <nav>
+        <a href="index.html">文章</a>
+        <a href="write.html">写文章</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <a href="index.html" class="back-link">← 返回首页</a>
+    <div id="loading" class="loading">加载中…</div>
+    <article id="post-wrap" style="display:none;">
+      <header id="post-header" class="post-header"></header>
+      <div id="post-content" class="post-content"></div>
+      <div id="post-nav"></div>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container"><p id="footer-text"></p></div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/post.js"></script>
+</body>
+</html>
