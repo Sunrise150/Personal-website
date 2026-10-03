@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>加载中…</title>
+  <title>管理文章</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
@@ -14,21 +14,20 @@
     <div class="container header-inner">
       <a href="index.html" class="site-title" id="site-title"></a>
       <nav>
-        <a href="index.html" class="active">文章</a>
+        <a href="index.html">文章</a>
         <a href="write.html">写文章</a>
-        <a href="manage.html">管理</a>
+        <a href="manage.html" class="active">管理</a>
       </nav>
     </div>
   </header>
 
   <main class="container">
-    <section class="hero">
-      <h1 id="hero-title"></h1>
-      <p id="hero-desc"></p>
-    </section>
-    <section class="post-list" id="post-list">
+    <h1 class="page-title">管理文章</h1>
+    <p class="hint" style="margin-bottom:20px;">删除后不可恢复，请谨慎操作。删除后 Actions 会自动更新索引，约 1 分钟生效。</p>
+    <div id="manage-list" class="manage-list">
       <div class="loading">加载中…</div>
-    </section>
+    </div>
+    <div id="status" class="status"></div>
   </main>
 
   <footer class="site-footer">
@@ -36,6 +35,6 @@
   </footer>
 
   <script src="assets/js/config.js"></script>
-  <script src="assets/js/main.js"></script>
+  <script src="assets/js/manage.js"></script>
 </body>
 </html>

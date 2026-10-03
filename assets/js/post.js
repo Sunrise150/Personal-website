@@ -21,15 +21,15 @@ async function loadPost() {
   try {
     const [idxRes, mdRes] = await Promise.all([
       fetch('data/posts.json?t=' + Date.now()),
-      fetch(`posts/${slug}.md?t=` + Date.now())
+      fetch(`posts/${encodeURIComponent(slug)}.md?t=` + Date.now())
     ]);
-    if (!idxRes.ok) throw new Error('无法加载文章索引');
-    if (!mdRes.ok) throw new Error('找不到这篇文章');
+    if (!idxRes.ok) throw new Error('无法加载文章索引 (' + idxRes.status + ')');
+    if (!mdRes.ok) throw new Error(`找不到文件 posts/${slug}.md (${mdRes.status})`);
 
     const posts = await idxRes.json();
     const markdown = await mdRes.text();
     const post = posts.find(p => p.slug === slug);
-    if (!post) throw new Error('找不到这篇文章');
+    if (!post) throw new Error(`索引里没有 slug = "${slug}" 的文章`);
 
     document.title = `${post.title} - ${SITE_CONFIG.title}`;
     document.getElementById('post-header').innerHTML = `
@@ -49,10 +49,10 @@ async function loadPost() {
     const next = sorted[i - 1];
     let nav = '<div class="post-nav">';
     nav += prev
-      ? `<a class="post-nav-item" href="post.html?slug=${prev.slug}"><span>← 上一篇</span><strong>${prev.title}</strong></a>`
+      ? `<a class="post-nav-item" href="post.html?slug=${encodeURIComponent(prev.slug)}"><span>← 上一篇</span><strong>${prev.title}</strong></a>`
       : '<div></div>';
     nav += next
-      ? `<a class="post-nav-item next" href="post.html?slug=${next.slug}"><span>下一篇 →</span><strong>${next.title}</strong></a>`
+      ? `<a class="post-nav-item next" href="post.html?slug=${encodeURIComponent(next.slug)}"><span>下一篇 →</span><strong>${next.title}</strong></a>`
       : '<div></div>';
     nav += '</div>';
     document.getElementById('post-nav').innerHTML = nav;
