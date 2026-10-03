@@ -156,7 +156,9 @@ async function handleFiles(files) {
     list.appendChild(item);
     try {
       const path = await uploadImage(f);
-      const md = `![${f.name}](${path})`;
+      // 关键改动：用绝对路径，带上 base
+      const base = SITE_CONFIG.base || '/';
+      const md = `![${f.name}](${base}${path})`;
       insertToBody(md);
       item.textContent = `✓ ${f.name}`;
       item.classList.add('ok');

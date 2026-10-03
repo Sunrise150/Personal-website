@@ -14,6 +14,15 @@ function readingTime(text) {
   return Math.max(1, Math.ceil((cn + en * 2) / 400));
 }
 
+// 修复图片路径：把相对路径补成 base 开头的绝对路径
+function fixImagePaths(html) {
+  const base = SITE_CONFIG.base || '/';
+  return html.replace(
+    /<img([^>]*?)src="(?!https?:|\/\/|\/|data:)([^"]+)"/g,
+    (m, attrs, src) => `<img${attrs}src="${base}${src}"`
+  );
+}
+
 async function loadPost() {
   const slug = new URLSearchParams(location.search).get('slug');
   if (!slug) return showError('未指定文章');
@@ -41,7 +50,11 @@ async function loadPost() {
       </div>
       <h1>${post.title}</h1>
     `;
-    document.getElementById('post-content').innerHTML = marked.parse(markdown);
+
+    // 渲染 Markdown，然后修正图片路径
+    let html = marked.parse(markdown);
+    html = fixImagePaths(html);
+    document.getElementById('post-content').innerHTML = html;
 
     const sorted = posts.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
     const i = sorted.findIndex(p => p.slug === slug);
