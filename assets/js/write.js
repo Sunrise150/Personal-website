@@ -54,18 +54,19 @@ async function publishPost({ title, date, tags, excerpt, body }) {
 
   const slug = makeSlug(title, date);
   const tagLine = tags.length ? `[${tags.join(', ')}]` : '[]';
-  const fm = [
-    '---',
-    `title: ${title}`,
-    `date: ${date}`,
-    `tags: ${tagLine}`,
-    `excerpt: ${excerpt || ''}`,
-    '---',
-    '',
-    body
-  ].join('\n');
 
-  const content = encodeBase64(fm);
+  // 用模板字符串拼接，保证换行正确
+  const fileContent = `---
+title: ${title}
+date: ${date}
+tags: ${tagLine}
+excerpt: ${excerpt || ''}
+---
+
+${body}
+`;
+
+  const content = encodeBase64(fileContent);
   const path = `posts/${slug}.md`;
   const url = `https://api.github.com/repos/${settings.owner}/${settings.repo}/contents/${path}`;
 
@@ -156,11 +157,11 @@ async function handleFiles(files) {
     list.appendChild(item);
     try {
       const path = await uploadImage(f);
-      // 关键改动：用绝对路径，带上 base
+      // 用 base 拼成绝对路径，保证任何页面都能加载
       const base = SITE_CONFIG.base || '/';
       const md = `![${f.name}](${base}${path})`;
       insertToBody(md);
-      item.textContent = `✓ ${f.name}`;
+      item.textContent = `✓ ${f.name} → 已插入正文`;
       item.classList.add('ok');
     } catch (e) {
       item.textContent = `✗ ${f.name}：${e.message}`;
