@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>音乐管理</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="site-title" id="site-title"></a>
+      <nav>
+        <a href="index.html">文章</a>
+        <a href="write.html">写文章</a>
+        <a href="manage.html">管理</a>
+        <a href="music.html" class="active">音乐</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <h1 class="page-title">音乐管理</h1>
+    <p class="hint" style="margin-bottom:20px;">
+      上传后会把文件存到 assets/music/，并更新 data/music.json。约 1 分钟后全站生效。
+    </p>
+
+    <form id="music-form" class="write-form">
+      <div class="field">
+        <label>选择音乐文件</label>
+        <div class="file-row">
+          <input type="file" id="m-file" accept="audio/*,.mp3,.m4a,.ogg,.wav,.flac,.aac" hidden>
+          <button type="button" id="m-file-pick" class="ghost-btn">选择文件</button>
+          <span class="hint" id="m-file-name">支持 mp3 / m4a / ogg / wav / flac / aac，单个不超过 25MB</span>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="m-name">歌名</label>
+          <input id="m-name" type="text" placeholder="留空则用文件名">
+        </div>
+        <div class="field">
+          <label for="m-artist">艺术家（选填）</label>
+          <input id="m-artist" type="text" placeholder="歌手 / 作者">
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" id="m-submit">上传</button>
+      </div>
+      <div id="m-status" class="status"></div>
+    </form>
+
+    <h2 class="page-title" style="font-size:22px;margin-top:32px;">音乐列表</h2>
+    <div id="music-admin-list" class="manage-list">
+      <div class="loading">加载中…</div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container"><p id="footer-text"></p></div>
+  </footer>
+
+  <script src="assets/js/config.js?v=3"></script>
+  <script src="assets/js/music-manage.js"></script>
+  <script src="assets/js/player.js"></script>
+</body>
+</html>

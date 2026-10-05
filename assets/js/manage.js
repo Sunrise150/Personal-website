@@ -1,8 +1,13 @@
 const STORAGE_KEY = 'blog_gh_settings';
+const MUSIC_JSON = 'data/music.json';
+const MUSIC_DIR = 'assets/music';
+const MUSIC_MAX_MB = 25;
 
 function applyConfig() {
-  document.getElementById('site-title').textContent = SITE_CONFIG.title;
-  document.getElementById('footer-text').textContent = SITE_CONFIG.footer;
+  const t = document.getElementById('site-title');
+  const f = document.getElementById('footer-text');
+  if (t) t.textContent = SITE_CONFIG.title;
+  if (f) f.textContent = SITE_CONFIG.footer;
 }
 
 function getSettings() {
@@ -13,90 +18,283 @@ function getSettings() {
 }
 
 function setStatus(msg, type = '') {
-  const el = document.getElementById('status');
+  const el = document.getElementById('m-status');
+  if (!el) return;
   el.textContent = msg;
   el.className = 'status ' + type;
 }
 
-function formatDate(str) {
-  const d = new Date(str);
-  return d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+function encodeBase64(str) {
+  return btoa(unescape(encodeURIComponent(str)));
 }
 
-async function loadList() {
-  const wrap = document.getElementById('manage-list');
-  try {
-    const res = await fetch('data/posts.json?t=' + Date.now());
-    if (!res.ok) throw new Error('无法加载文章列表');
-    const posts = await res.json();
-    posts.sort((a, b) => new Date(b.date) - new Date(a.date));
+function decodeBase64(str) {
+  return decodeURIComponent(escape(atob(str)));
+}
 
-    if (posts.length === 0) {
-      wrap.innerHTML = '<p class="empty">还没有文章</p>';
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const s = reader.result;
+      resolve(s.slice(s.indexOf(',') + 1));
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+function requireSettings() {
+  const s = getSettings();
+  if (!s) throw new Error('请先在「写文章」页面配置 GitHub 信息');
+  return s;
+}
+
+function ghUrl(path) {
+  const s = requireSettings();
+  return `https://api.github.com/repos/${s.owner}/${s.repo}/contents/${path}`;
+}
+
+function ghHeaders() {
+  const s = requireSettings();
+  return {
+    'Authorization': `token ${s.token}`,
+    'Accept': 'application/vnd.github.v3+json'
+  };
+}
+
+async function ghGet(path) {
+  const res = await fetch(ghUrl(path) + '?t=' + Date.now(), { headers: ghHeaders() });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`读取 ${path} 失败 (${res.status})`);
+  const data = await res.json();
+  return {
+    sha: data.sha,
+    content: data.content ? decodeBase64(data.content.replace(/\n/g, '')) : ''
+  };
+}
+
+async function ghPut(path, contentBase64, message, sha) {
+  const body = { message, content: contentBase64 };
+  if (sha) body.sha = sha;
+  const res = await fetch(ghUrl(path), {
+    method: 'PUT',
+    headers: { ...ghHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+async function ghDelete(path, message, sha) {
+  const res = await fetch(ghUrl(path), {
+    method: 'DELETE',
+    headers: { ...ghHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, sha })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `HTTP ${res.status}`);
+  }
+}
+
+async function loadMusicList() {
+  const meta = await ghGet(MUSIC_JSON);
+  if (!meta) return { list: [], sha: null };
+  let list = [];
+  try { list = JSON.parse(meta.content); } catch (e) { list = []; }
+  if (!Array.isArray(list)) list = [];
+  return { list, sha: meta.sha };
+}
+
+async function saveMusicList(list, sha, message) {
+  const content = encodeBase64(JSON.stringify(list, null, 2));
+  await ghPut(MUSIC_JSON, content, message, sha);
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>"']/g, m => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[m]));
+}
+
+async function render() {
+  const wrap = document.getElementById('music-admin-list');
+  if (!wrap) return;
+  try {
+    const { list } = await loadMusicList();
+    if (!list.length) {
+      wrap.innerHTML = '<p class="empty">还没有音乐，去上面上传一首吧</p>';
       return;
     }
-
-    wrap.innerHTML = posts.map(p => `
-      <div class="manage-item" data-slug="${p.slug}">
-        <div class="manage-info">
-          <div class="manage-title">${p.title}</div>
-          <div class="manage-meta">${formatDate(p.date)} · slug: ${p.slug}</div>
+    wrap.innerHTML = list.map((m, i) => `
+      <div class="music-admin-item" data-i="${i}">
+        <div class="music-admin-info">
+          <div class="music-admin-name">${escapeHtml(m.name || '未知曲目')}</div>
+          <div class="music-admin-meta">${escapeHtml(m.artist || '未填写艺术家')} · ${escapeHtml(m.src || '')}</div>
         </div>
-        <div class="manage-actions">
-          <a class="mini-btn" href="post.html?slug=${encodeURIComponent(p.slug)}" target="_blank">查看</a>
-          <button class="mini-btn danger" data-slug="${p.slug}">删除</button>
+        <div class="music-admin-actions">
+          <button class="mini-btn" data-act="edit" data-i="${i}">编辑</button>
+          <button class="mini-btn" data-act="play" data-i="${i}">试听</button>
+          <button class="mini-btn danger" data-act="del" data-i="${i}">删除</button>
         </div>
       </div>
     `).join('');
 
-    wrap.querySelectorAll('button.danger').forEach(btn => {
-      btn.addEventListener('click', () => onDelete(btn.dataset.slug));
+    wrap.querySelectorAll('button[data-act]').forEach(btn => {
+      const act = btn.dataset.act;
+      const i = Number(btn.dataset.i);
+      if (act === 'edit') btn.addEventListener('click', () => onEdit(i));
+      else if (act === 'del') btn.addEventListener('click', () => onDelete(i));
+      else if (act === 'play') btn.addEventListener('click', () => onPlay(i));
     });
   } catch (e) {
     wrap.innerHTML = `<p class="empty">加载失败：${e.message}</p>`;
   }
 }
 
-async function onDelete(slug) {
-  if (!confirm(`确定要删除「${slug}」吗？此操作不可恢复。`)) return;
-  const settings = getSettings();
-  if (!settings) {
-    setStatus('请先在写文章页配置 GitHub 信息', 'error');
-    return;
-  }
-
-  setStatus('正在删除…');
+let previewAudio = null;
+async function onPlay(i) {
   try {
-    const path = `posts/${slug}.md`;
-    const url = `https://api.github.com/repos/${settings.owner}/${settings.repo}/contents/${path}`;
-    const headers = {
-      'Authorization': `token ${settings.token}`,
-      'Accept': 'application/vnd.github.v3+json'
-    };
+    const { list } = await loadMusicList();
+    const item = list[i];
+    if (!item) return;
+    if (previewAudio) previewAudio.pause();
+    const base = SITE_CONFIG.base || '/';
+    const src = /^https?:|^\//.test(item.src) ? item.src : base + item.src;
+    previewAudio = new Audio(src);
+    previewAudio.play().catch(e => alert('无法播放：' + e.message));
+  } catch (e) {
+    alert(e.message);
+  }
+}
 
-    const getRes = await fetch(url, { headers });
-    if (!getRes.ok) throw new Error('找不到文件 (' + getRes.status + ')');
-    const { sha } = await getRes.json();
+async function onEdit(i) {
+  try {
+    const { list, sha } = await loadMusicList();
+    const item = list[i];
+    if (!item) return;
+    const newName = prompt('新歌名', item.name || '');
+    if (newName === null) return;
+    const newArtist = prompt('艺术家（可留空）', item.artist || '');
+    if (newArtist === null) return;
+    item.name = newName.trim() || item.name;
+    item.artist = newArtist.trim();
+    setStatus('正在保存…');
+    await saveMusicList(list, sha, `更新音乐信息：${item.name}`);
+    setStatus('✓ 已更新，约 1 分钟后全站生效', 'ok');
+    render();
+  } catch (e) {
+    setStatus('更新失败：' + e.message, 'error');
+  }
+}
 
-    const delRes = await fetch(url, {
-      method: 'DELETE',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: `删除文章：${slug}`,
-        sha
-      })
-    });
-    if (!delRes.ok) {
-      const err = await delRes.json().catch(() => ({}));
-      throw new Error(err.message || `删除失败 (${delRes.status})`);
+async function onDelete(i) {
+  if (!confirm('确定要删除这首音乐吗？文件也会一并删除。')) return;
+  try {
+    const { list, sha } = await loadMusicList();
+    const item = list[i];
+    if (!item) return;
+
+    setStatus('正在删除文件…');
+    try {
+      const fileMeta = await ghGet(item.src);
+      if (fileMeta) {
+        await ghDelete(item.src, `删除音乐文件：${item.name}`, fileMeta.sha);
+      }
+    } catch (e) {
+      // 文件可能已删除，忽略
     }
 
-    setStatus('✓ 已删除，Actions 正在更新索引，约 1 分钟后生效。', 'ok');
-    await loadList();
+    setStatus('正在更新列表…');
+    list.splice(i, 1);
+    await saveMusicList(list, sha, `移除音乐：${item.name}`);
+    setStatus('✓ 已删除，约 1 分钟后全站生效', 'ok');
+    render();
   } catch (e) {
     setStatus('删除失败：' + e.message, 'error');
   }
 }
 
+/* 上传 */
+let selectedFile = null;
+
+document.getElementById('m-file-pick').addEventListener('click', () => {
+  document.getElementById('m-file').click();
+});
+
+document.getElementById('m-file').addEventListener('change', (e) => {
+  const f = e.target.files[0];
+  selectedFile = f || null;
+  const el = document.getElementById('m-file-name');
+  if (f) {
+    el.textContent = `已选择：${f.name}（${(f.size / 1024 / 1024).toFixed(2)} MB）`;
+    const nameInput = document.getElementById('m-name');
+    if (!nameInput.value) {
+      nameInput.value = f.name.replace(/\.[^.]+$/, '');
+    }
+  } else {
+    el.textContent = '支持 mp3 / m4a / ogg / wav / flac / aac，单个不超过 25MB';
+  }
+});
+
+document.getElementById('music-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('m-name').value.trim();
+  const artist = document.getElementById('m-artist').value.trim();
+
+  if (!selectedFile) {
+    setStatus('请先选择音乐文件', 'error');
+    return;
+  }
+  if (selectedFile.size > MUSIC_MAX_MB * 1024 * 1024) {
+    setStatus(`文件超过 ${MUSIC_MAX_MB}MB`, 'error');
+    return;
+  }
+
+  const btn = document.getElementById('m-submit');
+  btn.disabled = true;
+  setStatus('正在上传文件…');
+
+  try {
+    const ext = (selectedFile.name.match(/\.(\w+)$/) || [null, 'mp3'])[1].toLowerCase();
+    const safeName = (name || selectedFile.name)
+      .replace(/[^\w\-\u4e00-\u9fa5]+/g, '_')
+      .slice(0, 40);
+    const filename = `music-${Date.now().toString(36)}-${safeName}.${ext}`;
+    const path = `${MUSIC_DIR}/${filename}`;
+    const content = await blobToBase64(selectedFile);
+
+    await ghPut(path, content, `上传音乐：${name || selectedFile.name}`);
+    setStatus('文件已上传，正在更新列表…');
+
+    const { list, sha } = await loadMusicList();
+    list.push({
+      name: name || selectedFile.name.replace(/\.[^.]+$/, ''),
+      artist: artist || '',
+      src: path,
+      uploadedAt: Date.now()
+    });
+    await saveMusicList(list, sha, `添加音乐：${name || selectedFile.name}`);
+
+    setStatus('✓ 上传成功，约 1 分钟后全站生效', 'ok');
+    selectedFile = null;
+    document.getElementById('m-file').value = '';
+    document.getElementById('m-file-name').textContent =
+      '支持 mp3 / m4a / ogg / wav / flac / aac，单个不超过 25MB';
+    document.getElementById('m-name').value = '';
+    document.getElementById('m-artist').value = '';
+    render();
+  } catch (err) {
+    setStatus('上传失败：' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 applyConfig();
-loadList();
+render();

@@ -515,3 +515,232 @@ nav a:hover, nav a.active { color: var(--text); }
   .music-fab { width: 46px; height: 46px; font-size: 20px; }
   .music-panel { width: calc(100vw - 40px); max-width: 320px; }
 }
+
+/* ============ 附件上传行 ============ */
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+
+/* ============ 音乐抽屉（右上角偏下，DVD 进出仓） ============ */
+.music-drawer {
+  position: fixed;
+  top: 84px;
+  right: 0;
+  z-index: 400;
+  display: flex;
+  align-items: flex-start;
+  pointer-events: none;
+  font-family: inherit;
+}
+
+.music-tab {
+  width: 44px;
+  height: 48px;
+  border-radius: 12px 0 0 12px;
+  border: 1px solid var(--border);
+  border-right: none;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: -4px 0 14px rgba(0,0,0,.08);
+  flex-shrink: 0;
+  transition: background .2s, color .2s;
+  pointer-events: auto;
+}
+.music-tab:hover {
+  background: var(--accent);
+  color: #fff;
+}
+.music-drawer.is-expanded .music-tab,
+.music-drawer.is-peek .music-tab {
+  background: var(--accent);
+  color: #fff;
+}
+
+.music-drawer-body {
+  width: min(300px, 78vw);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-right: none;
+  border-radius: 14px 0 0 14px;
+  padding: 14px 16px;
+  box-shadow: -8px 0 24px rgba(0,0,0,.1);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transform: translateX(100%);
+  opacity: 0;
+  transition: transform .45s cubic-bezier(.4, 0, .2, 1), opacity .3s;
+  pointer-events: none;
+}
+.music-drawer.is-expanded .music-drawer-body,
+.music-drawer.is-peek .music-drawer-body {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.music-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-weight: 600;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.music-head-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  font-family: inherit;
+}
+.music-head-close:hover { color: var(--text); }
+
+.music-now {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0 8px;
+}
+.music-now-name {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 16px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.music-now-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.music-controls {
+  display: flex;
+  gap: 6px;
+}
+.music-controls button {
+  flex: 1;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 8px 0;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
+}
+.music-controls button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.music-controls button:active { transform: scale(.96); }
+
+.music-list {
+  max-height: 240px;
+  overflow-y: auto;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.music-list-empty {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 12px 0;
+}
+.music-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  transition: background .15s;
+}
+.music-list-item:hover { background: var(--tag-bg); }
+.music-list-item.active {
+  background: rgba(37, 99, 235, .1);
+  color: var(--accent);
+  font-weight: 600;
+}
+.music-list-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+.music-list-artist {
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ============ 音乐管理页 ============ */
+.music-admin-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+}
+.music-admin-info { flex: 1; min-width: 0; }
+.music-admin-name {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.music-admin-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.music-admin-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .music-drawer { top: 70px; }
+  .music-tab { width: 40px; height: 44px; font-size: 18px; }
+  .music-admin-item { flex-direction: column; align-items: stretch; }
+  .music-admin-actions { justify-content: flex-end; }
+}
