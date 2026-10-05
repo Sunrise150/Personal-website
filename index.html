@@ -3,42 +3,135 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>加载中…</title>
+  <title>日出的blog</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/style.css?v=3">
+  <style>
+    /* shell 专属：iframe 占满剩余高度 */
+    html, body { height: 100%; margin: 0; }
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+    .shell-frame {
+      flex: 1 1 auto;
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      border: 0;
+      display: block;
+      min-height: calc(100vh - 64px - 60px);
+    }
+    /* shell 自身的 site-header 与子页面共用样式，无需改动 */
+  </style>
 </head>
 <body>
   <header class="site-header">
     <div class="container header-inner">
-      <a href="index.html" class="site-title" id="site-title"></a>
-      <nav>
-        <a href="index.html" class="active">文章</a>
-        <a href="write.html">写文章</a>
-        <a href="manage.html">管理</a>
-        <a href="music.html">音乐</a>
-        <a href="rooms.html">房间人数查看</a>
+      <a href="index.html" class="site-title" id="site-title">日出的blog</a>
+      <nav id="shell-nav">
+        <a href="home.html" class="active" data-path="home.html">文章</a>
+        <a href="write.html" data-path="write.html">写文章</a>
+        <a href="manage.html" data-path="manage.html">管理</a>
+        <a href="music.html" data-path="music.html">音乐</a>
+        <a href="rooms.html" data-path="rooms.html">房间人数查看</a>
       </nav>
     </div>
   </header>
 
-  <main class="container">
-    <section class="hero">
-      <h1 id="hero-title"></h1>
-      <p id="hero-desc"></p>
-    </section>
-    <section class="post-list" id="post-list">
-      <div class="loading">加载中…</div>
-    </section>
-  </main>
+  <iframe id="content-frame" class="shell-frame" src="home.html" name="content"></iframe>
 
   <footer class="site-footer">
-    <div class="container"><p id="footer-text"></p></div>
+    <div class="container"><p id="footer-text">© 日出的blog</p></div>
   </footer>
 
   <script src="assets/js/config.js?v=3"></script>
-  <script src="assets/js/main.js"></script>
-  <script src="assets/js/player.js?v=8"></script>
+  <script src="assets/js/player.js?v=9"></script>
+  <script>
+    (function () {
+      const frame = document.getElementById('content-frame');
+      const nav = document.getElementById('shell-nav');
+      const baseLen = (SITE_CONFIG.base || '/').length;
+
+      // 取当前路径去掉 base 前缀（如 /Personal-website/home.html → home.html）
+      function stripBase(p) {
+        if (!p) return '';
+        if (p.charAt(0) !== '/' && p.indexOf('//') === -1) return p;
+        let s = p;
+        const b = SITE_CONFIG.base || '/';
+        if (s.indexOf(b) === 0) s = s.slice(b.length);
+        return s;
+      }
+
+      // 当前应该显示的子页面路径
+      function getCurrentPath() {
+        // 优先读 location.hash（如 #/post.html?slug=xxx）
+        if (location.hash && location.hash.length > 2) {
+          return location.hash.slice(1);
+        }
+        // 否则读 query ?path=
+        const params = new URLSearchParams(location.search);
+        const p = params.get('path');
+        if (p) return p;
+        return 'home.html';
+      }
+
+      // 初始加载 iframe src
+      function initFrame() {
+        const p = getCurrentPath();
+        frame.src = p;
+      }
+
+      // iframe 加载完成后：同步外层 URL + 高亮导航 + 同步外层 title
+      frame.addEventListener('load', () => {
+        let iframePath = '';
+        try {
+          iframePath = frame.contentWindow.location.pathname +
+            frame.contentWindow.location.search;
+        } catch (e) {
+          return; // 跨域，忽略
+        }
+        const sub = stripBase(iframePath);
+        if (!sub) return;
+
+        // 用 hash 记录当前子页路径，便于分享/刷新
+        const targetHash = '#' + sub;
+        if (location.hash !== targetHash) {
+          history.pushState({ path: sub }, '', '#' + sub);
+        }
+
+        // 高亮当前导航项
+        nav.querySelectorAll('a').forEach(a => {
+          a.classList.toggle('active', a.getAttribute('data-path') === sub);
+        });
+
+        // 同步外层 title
+        try {
+          document.title = frame.contentDocument.title || '日出的blog';
+        } catch (e) {}
+      });
+
+      // 导航链接点击：让 iframe 加载新页（不整页跳转）
+      nav.addEventListener('click', (e) => {
+        const a = e.target.closest('a[data-path]');
+        if (!a) return;
+        e.preventDefault();
+        const path = a.getAttribute('data-path');
+        frame.src = path;
+      });
+
+      // 浏览器后退/前进：同步 iframe
+      window.addEventListener('popstate', (e) => {
+        const p = getCurrentPath();
+        if (frame.src.indexOf(p) === -1) {
+          frame.src = p;
+        }
+      });
+
+      // iframe 内的链接默认会在 iframe 内打开新页（同源），无需额外处理
+      // iframe load 事件会同步外层 URL
+
+      initFrame();
+    })();
+  </script>
 </body>
 </html>

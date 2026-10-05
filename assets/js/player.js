@@ -1,4 +1,8 @@
 (function () {
+  // 在 iframe 内（被 shell 包裹）时不加载此 player，外层 shell 已加载
+  // 这样 iframe 内的页面切换不会销毁外层的 Audio 元素，音乐持续播放
+  if (window.top !== window.self) return;
+
   const base = (window.SITE_CONFIG && SITE_CONFIG.base) || '/';
   const STORAGE_KEY = 'blog_music_state';
   const MUSIC_CACHE_KEY = 'blog_music_json';

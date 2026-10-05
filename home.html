@@ -15,7 +15,7 @@
     <div class="container header-inner">
       <a href="index.html" class="site-title" id="site-title"></a>
       <nav>
-        <a href="index.html">文章</a>
+        <a href="index.html" class="active">文章</a>
         <a href="write.html">写文章</a>
         <a href="manage.html">管理</a>
         <a href="music.html">音乐</a>
@@ -25,22 +25,21 @@
   </header>
 
   <main class="container">
-    <a href="index.html" class="back-link">← 返回首页</a>
-    <div id="loading" class="loading">加载中…</div>
-    <article id="post-wrap" style="display:none;">
-      <header id="post-header" class="post-header"></header>
-      <div id="post-content" class="post-content"></div>
-      <div id="post-nav"></div>
-    </article>
+    <section class="hero">
+      <h1 id="hero-title"></h1>
+      <p id="hero-desc"></p>
+    </section>
+    <section class="post-list" id="post-list">
+      <div class="loading">加载中…</div>
+    </section>
   </main>
 
   <footer class="site-footer">
     <div class="container"><p id="footer-text"></p></div>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="assets/js/config.js?v=3"></script>
-  <script src="assets/js/post.js"></script>
+  <script src="assets/js/main.js"></script>
   <script src="assets/js/player.js?v=8"></script>
 </body>
 </html>

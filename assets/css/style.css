@@ -61,15 +61,26 @@ a { color: inherit; text-decoration: none; }
 @media (prefers-color-scheme: dark) {
   .site-header { background: rgba(12,10,9,.85); }
 }
-.header-inner { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+.header-inner { display: flex; justify-content: space-between; align-items: center; height: 64px; gap: 16px; }
 .site-title {
   font-family: 'Noto Serif SC', serif;
   font-size: 18px; font-weight: 700; letter-spacing: -.01em;
   transition: color .2s;
+  flex-shrink: 0;
 }
 .site-title:hover { color: var(--accent); }
-nav a { font-size: 14px; color: var(--text-muted); margin-left: 20px; transition: color .2s; }
+nav { display: flex; align-items: center; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
+nav::-webkit-scrollbar { display: none; }
+nav a { font-size: 14px; color: var(--text-muted); margin-left: 20px; transition: color .2s; white-space: nowrap; }
+nav a:first-child { margin-left: 0; }
 nav a:hover, nav a.active { color: var(--text); }
+
+/* ============ shell iframe 模式：子页面在 iframe 内时隐藏自己的 header/footer/music-drawer ============ */
+html.is-framed .site-header,
+html.is-framed .site-footer,
+html.is-framed #music-drawer { display: none !important; }
+html.is-framed body { padding-top: 0; }
+html.is-framed .hero { padding-top: 32px; }
 
 .hero { padding: 72px 0 48px; text-align: center; }
 .hero h1 {
