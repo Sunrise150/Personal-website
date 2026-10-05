@@ -1,0 +1,18 @@
+name: Keep Alive
+on:
+  schedule:
+    - cron: '0 0 */50 * *'  # 每50天运行一次，避免触发60天限制
+  workflow_dispatch:
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Keep Alive
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit --allow-empty -m "chore: keep alive [$(date -u +'%Y-%m-%d')]"
+          git push
