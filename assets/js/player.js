@@ -1,6 +1,8 @@
 (function () {
   const base = (window.SITE_CONFIG && SITE_CONFIG.base) || '/';
   const STORAGE_KEY = 'blog_music_state';
+  const MUSIC_CACHE_KEY = 'blog_music_json';
+  const MUSIC_CACHE_TTL = 60000; // 60s 内跨页复用 music.json，避免每页都 fetch
 
   let MUSIC = [];
   let current = 0;
@@ -8,8 +10,24 @@
   let mode = 'collapsed'; // collapsed | peek | expanded
   let peekTimer = null;
 
-  const audio = new Audio();
-  audio.preload = 'auto';
+  // 性能优化：延迟创建 Audio，首次播放时才实例化
+  let _audio = null;
+  function audio() {
+    if (!_audio) {
+      _audio = new Audio();
+      _audio.preload = 'auto';
+      _audio.addEventListener('ended', () => load(current + 1, true, true));
+      let lastSave = 0;
+      _audio.addEventListener('timeupdate', () => {
+        const now = Date.now();
+        if (now - lastSave > 1000) {
+          lastSave = now;
+          save();
+        }
+      });
+    }
+    return _audio;
+  }
 
   const html = `
     <div id="music-drawer" class="music-drawer is-collapsed">
@@ -100,7 +118,7 @@
   function load(index, autoplay, doPeek) {
     if (!MUSIC.length) return;
     current = (index + MUSIC.length) % MUSIC.length;
-    audio.src = absSrc(currentItem().src);
+    audio().src = absSrc(currentItem().src);
     updateName();
     renderList();
     if (autoplay) play();
@@ -113,11 +131,11 @@
       setMode('expanded');
       return;
     }
-    if (!audio.src) {
+    if (!audio().src) {
       load(current, true, false);
       return;
     }
-    const p = audio.play();
+    const p = audio().play();
     if (p && p.catch) p.catch(() => {});
     playing = true;
     $('music-play').textContent = '❚❚';
@@ -126,7 +144,7 @@
   }
 
   function pause() {
-    audio.pause();
+    audio().pause();
     playing = false;
     $('music-play').textContent = '▶';
     updateName();
@@ -144,9 +162,10 @@
 
   function save() {
     try {
+      const a = _audio; // 未初始化时无需保存播放进度
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
         current,
-        time: audio.currentTime || 0,
+        time: a ? a.currentTime || 0 : 0,
         playing
       }));
     } catch (e) {}
@@ -158,17 +177,21 @@
       if (!s || !MUSIC.length) return;
       if (typeof s.current === 'number' && s.current < MUSIC.length) {
         current = s.current;
-        audio.src = absSrc(currentItem().src);
+        // 仅当之前在播放时才创建 audio，避免无谓开销
+        if (s.playing || (typeof s.time === 'number' && s.time > 0)) {
+          audio().src = absSrc(currentItem().src);
+        }
         updateName();
         renderList();
       }
-      if (typeof s.time === 'number' && s.time > 0) {
-        const apply = () => { try { audio.currentTime = s.time; } catch (e) {} };
-        if (audio.readyState >= 1) apply();
-        else audio.addEventListener('loadedmetadata', apply, { once: true });
+      if (typeof s.time === 'number' && s.time > 0 && _audio) {
+        const a = audio();
+        const apply = () => { try { a.currentTime = s.time; } catch (e) {} };
+        if (a.readyState >= 1) apply();
+        else a.addEventListener('loadedmetadata', apply, { once: true });
       }
       if (s.playing) {
-        const p = audio.play();
+        const p = audio().play();
         if (p && p.then) {
           p.then(() => {
             playing = true;
@@ -198,32 +221,34 @@
   $('music-prev').addEventListener('click', () => load(current - 1, playing, true));
   $('music-next').addEventListener('click', () => load(current + 1, playing, true));
 
-  audio.addEventListener('ended', () => load(current + 1, true, true));
-
-  let lastSave = 0;
-  audio.addEventListener('timeupdate', () => {
-    const now = Date.now();
-    if (now - lastSave > 1000) {
-      lastSave = now;
-      save();
-    }
-  });
-
+  // 性能优化：ended / timeupdate 事件已移入 audio() 延迟初始化中
   window.addEventListener('beforeunload', save);
 
-  /* 初始化 */
+  /* 初始化：带 sessionStorage 缓存的 music.json，避免每次跳页都发请求 */
   (async function init() {
     try {
-      const res = await fetch('data/music.json?t=' + Date.now());
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) MUSIC = data;
+      const cached = sessionStorage.getItem(MUSIC_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && Array.isArray(parsed.data) && Date.now() - parsed.ts < MUSIC_CACHE_TTL) {
+          MUSIC = parsed.data;
+        }
+      }
+      if (!MUSIC.length) {
+        const res = await fetch('data/music.json?t=' + Date.now());
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            MUSIC = data;
+            sessionStorage.setItem(MUSIC_CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
+          }
+        }
       }
     } catch (e) {}
     renderList();
     updateName();
+    // 性能优化：不再预加载第一首的 src，仅在用户点击播放时才创建 audio
     if (MUSIC.length) {
-      audio.src = absSrc(currentItem().src);
       restore();
     }
   })();

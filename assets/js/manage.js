@@ -1,7 +1,10 @@
 const STORAGE_KEY = 'blog_gh_settings';
-const MUSIC_JSON = 'data/music.json';
-const MUSIC_DIR = 'assets/music';
-const MUSIC_MAX_MB = 25;
+const POSTS_JSON = 'data/posts.json';
+const POSTS_DIR = 'posts';
+
+/* ============ 性能优化：索引缓存 ============ */
+let postsCache = null; // { list, sha, ts }
+const CACHE_TTL = 30000; // 30s 内复用，删除/编辑时不重复拉取
 
 function applyConfig() {
   const t = document.getElementById('site-title');
@@ -18,7 +21,7 @@ function getSettings() {
 }
 
 function setStatus(msg, type = '') {
-  const el = document.getElementById('m-status');
+  const el = document.getElementById('status');
   if (!el) return;
   el.textContent = msg;
   el.className = 'status ' + type;
@@ -30,18 +33,6 @@ function encodeBase64(str) {
 
 function decodeBase64(str) {
   return decodeURIComponent(escape(atob(str)));
-}
-
-function blobToBase64(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const s = reader.result;
-      resolve(s.slice(s.indexOf(',') + 1));
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
 }
 
 function requireSettings() {
@@ -101,18 +92,25 @@ async function ghDelete(path, message, sha) {
   }
 }
 
-async function loadMusicList() {
-  const meta = await ghGet(MUSIC_JSON);
-  if (!meta) return { list: [], sha: null };
+/* ============ 性能优化：带缓存的 loadPosts ============ */
+async function loadPosts(force = false) {
+  if (postsCache && !force && Date.now() - postsCache.ts < CACHE_TTL) {
+    return postsCache;
+  }
+  const meta = await ghGet(POSTS_JSON);
+  if (!meta) { postsCache = { list: [], sha: null, ts: Date.now() }; return postsCache; }
   let list = [];
   try { list = JSON.parse(meta.content); } catch (e) { list = []; }
   if (!Array.isArray(list)) list = [];
-  return { list, sha: meta.sha };
+  postsCache = { list, sha: meta.sha, ts: Date.now() };
+  return postsCache;
 }
 
-async function saveMusicList(list, sha, message) {
+async function savePosts(list, sha, message) {
   const content = encodeBase64(JSON.stringify(list, null, 2));
-  await ghPut(MUSIC_JSON, content, message, sha);
+  const result = await ghPut(POSTS_JSON, content, message, sha);
+  postsCache = null; // 写入后失效缓存
+  return result;
 }
 
 function escapeHtml(str) {
@@ -122,179 +120,90 @@ function escapeHtml(str) {
   }[m]));
 }
 
-async function render() {
-  const wrap = document.getElementById('music-admin-list');
+function formatDate(str) {
+  const d = new Date(str);
+  return d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+/* ============ 性能优化：DocumentFragment 渲染 ============ */
+function renderList(list) {
+  const wrap = document.getElementById('manage-list');
   if (!wrap) return;
-  try {
-    const { list } = await loadMusicList();
-    if (!list.length) {
-      wrap.innerHTML = '<p class="empty">还没有音乐，去上面上传一首吧</p>';
-      return;
-    }
-    wrap.innerHTML = list.map((m, i) => `
-      <div class="music-admin-item" data-i="${i}">
-        <div class="music-admin-info">
-          <div class="music-admin-name">${escapeHtml(m.name || '未知曲目')}</div>
-          <div class="music-admin-meta">${escapeHtml(m.artist || '未填写艺术家')} · ${escapeHtml(m.src || '')}</div>
-        </div>
-        <div class="music-admin-actions">
-          <button class="mini-btn" data-act="edit" data-i="${i}">编辑</button>
-          <button class="mini-btn" data-act="play" data-i="${i}">试听</button>
-          <button class="mini-btn danger" data-act="del" data-i="${i}">删除</button>
-        </div>
+  if (!list.length) {
+    wrap.innerHTML = '<p class="empty">还没有文章</p>';
+    return;
+  }
+  // 按日期倒序
+  const sorted = list.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+  const frag = document.createDocumentFragment();
+  sorted.forEach((p) => {
+    const item = document.createElement('div');
+    item.className = 'manage-item';
+    item.dataset.slug = p.slug;
+    item.innerHTML = `
+      <div class="manage-info">
+        <div class="manage-title">${escapeHtml(p.title || '(无标题)')}</div>
+        <div class="manage-meta">${escapeHtml(formatDate(p.date))} · ${(p.tags || []).map(escapeHtml).join(', ') || '无标签'} · ${escapeHtml(p.slug)}</div>
       </div>
-    `).join('');
+      <div class="manage-actions">
+        <a class="mini-btn" href="post.html?slug=${encodeURIComponent(p.slug)}" target="_blank">查看</a>
+        <button class="mini-btn danger" data-act="del" data-slug="${escapeHtml(p.slug)}">删除</button>
+      </div>
+    `;
+    frag.appendChild(item);
+  });
+  wrap.replaceChildren(frag);
+}
 
-    wrap.querySelectorAll('button[data-act]').forEach(btn => {
-      const act = btn.dataset.act;
-      const i = Number(btn.dataset.i);
-      if (act === 'edit') btn.addEventListener('click', () => onEdit(i));
-      else if (act === 'del') btn.addEventListener('click', () => onDelete(i));
-      else if (act === 'play') btn.addEventListener('click', () => onPlay(i));
-    });
+async function render() {
+  const wrap = document.getElementById('manage-list');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="loading">加载中…</div>';
+  try {
+    const { list } = await loadPosts();
+    renderList(list);
   } catch (e) {
-    wrap.innerHTML = `<p class="empty">加载失败：${e.message}</p>`;
+    if (!getSettings()) {
+      wrap.innerHTML = '<p class="empty">请先在「写文章」页面配置 GitHub 信息</p>';
+    } else {
+      wrap.innerHTML = `<p class="empty">加载失败：${e.message}</p>`;
+    }
   }
 }
 
-let previewAudio = null;
-async function onPlay(i) {
-  try {
-    const { list } = await loadMusicList();
-    const item = list[i];
-    if (!item) return;
-    if (previewAudio) previewAudio.pause();
-    const base = SITE_CONFIG.base || '/';
-    const src = /^https?:|^\//.test(item.src) ? item.src : base + item.src;
-    previewAudio = new Audio(src);
-    previewAudio.play().catch(e => alert('无法播放：' + e.message));
-  } catch (e) {
-    alert(e.message);
-  }
-}
+/* ============ 性能优化：事件委托（单一监听器） ============ */
+document.getElementById('manage-list').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-act="del"]');
+  if (!btn) return;
+  onDelete(btn.dataset.slug);
+});
 
-async function onEdit(i) {
+async function onDelete(slug) {
+  if (!confirm(`确定删除文章「${slug}」吗？此操作不可恢复。`)) return;
   try {
-    const { list, sha } = await loadMusicList();
-    const item = list[i];
-    if (!item) return;
-    const newName = prompt('新歌名', item.name || '');
-    if (newName === null) return;
-    const newArtist = prompt('艺术家（可留空）', item.artist || '');
-    if (newArtist === null) return;
-    item.name = newName.trim() || item.name;
-    item.artist = newArtist.trim();
-    setStatus('正在保存…');
-    await saveMusicList(list, sha, `更新音乐信息：${item.name}`);
-    setStatus('✓ 已更新，约 1 分钟后全站生效', 'ok');
-    render();
-  } catch (e) {
-    setStatus('更新失败：' + e.message, 'error');
-  }
-}
+    const { list, sha } = await loadPosts();
+    const item = list.find(p => p.slug === slug);
+    if (!item) throw new Error('文章不在索引中');
 
-async function onDelete(i) {
-  if (!confirm('确定要删除这首音乐吗？文件也会一并删除。')) return;
-  try {
-    const { list, sha } = await loadMusicList();
-    const item = list[i];
-    if (!item) return;
-
-    setStatus('正在删除文件…');
+    setStatus('正在删除文章文件…');
     try {
-      const fileMeta = await ghGet(item.src);
+      const fileMeta = await ghGet(`${POSTS_DIR}/${slug}.md`);
       if (fileMeta) {
-        await ghDelete(item.src, `删除音乐文件：${item.name}`, fileMeta.sha);
+        await ghDelete(`${POSTS_DIR}/${slug}.md`, `删除文章：${item.title}`, fileMeta.sha);
       }
     } catch (e) {
-      // 文件可能已删除，忽略
+      // 文件可能已删除，继续更新索引
     }
 
-    setStatus('正在更新列表…');
-    list.splice(i, 1);
-    await saveMusicList(list, sha, `移除音乐：${item.name}`);
+    setStatus('正在更新索引…');
+    const newList = list.filter(p => p.slug !== slug);
+    await savePosts(newList, sha, `移除文章：${item.title}`);
     setStatus('✓ 已删除，约 1 分钟后全站生效', 'ok');
     render();
   } catch (e) {
     setStatus('删除失败：' + e.message, 'error');
   }
 }
-
-/* 上传 */
-let selectedFile = null;
-
-document.getElementById('m-file-pick').addEventListener('click', () => {
-  document.getElementById('m-file').click();
-});
-
-document.getElementById('m-file').addEventListener('change', (e) => {
-  const f = e.target.files[0];
-  selectedFile = f || null;
-  const el = document.getElementById('m-file-name');
-  if (f) {
-    el.textContent = `已选择：${f.name}（${(f.size / 1024 / 1024).toFixed(2)} MB）`;
-    const nameInput = document.getElementById('m-name');
-    if (!nameInput.value) {
-      nameInput.value = f.name.replace(/\.[^.]+$/, '');
-    }
-  } else {
-    el.textContent = '支持 mp3 / m4a / ogg / wav / flac / aac，单个不超过 25MB';
-  }
-});
-
-document.getElementById('music-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const name = document.getElementById('m-name').value.trim();
-  const artist = document.getElementById('m-artist').value.trim();
-
-  if (!selectedFile) {
-    setStatus('请先选择音乐文件', 'error');
-    return;
-  }
-  if (selectedFile.size > MUSIC_MAX_MB * 1024 * 1024) {
-    setStatus(`文件超过 ${MUSIC_MAX_MB}MB`, 'error');
-    return;
-  }
-
-  const btn = document.getElementById('m-submit');
-  btn.disabled = true;
-  setStatus('正在上传文件…');
-
-  try {
-    const ext = (selectedFile.name.match(/\.(\w+)$/) || [null, 'mp3'])[1].toLowerCase();
-    const safeName = (name || selectedFile.name)
-      .replace(/[^\w\-\u4e00-\u9fa5]+/g, '_')
-      .slice(0, 40);
-    const filename = `music-${Date.now().toString(36)}-${safeName}.${ext}`;
-    const path = `${MUSIC_DIR}/${filename}`;
-    const content = await blobToBase64(selectedFile);
-
-    await ghPut(path, content, `上传音乐：${name || selectedFile.name}`);
-    setStatus('文件已上传，正在更新列表…');
-
-    const { list, sha } = await loadMusicList();
-    list.push({
-      name: name || selectedFile.name.replace(/\.[^.]+$/, ''),
-      artist: artist || '',
-      src: path,
-      uploadedAt: Date.now()
-    });
-    await saveMusicList(list, sha, `添加音乐：${name || selectedFile.name}`);
-
-    setStatus('✓ 上传成功，约 1 分钟后全站生效', 'ok');
-    selectedFile = null;
-    document.getElementById('m-file').value = '';
-    document.getElementById('m-file-name').textContent =
-      '支持 mp3 / m4a / ogg / wav / flac / aac，单个不超过 25MB';
-    document.getElementById('m-name').value = '';
-    document.getElementById('m-artist').value = '';
-    render();
-  } catch (err) {
-    setStatus('上传失败：' + err.message, 'error');
-  } finally {
-    btn.disabled = false;
-  }
-});
 
 applyConfig();
 render();
