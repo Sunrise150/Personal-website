@@ -418,3 +418,100 @@ nav a:hover, nav a.active { color: var(--text); }
   .manage-item { flex-direction: column; align-items: stretch; }
   .manage-actions { justify-content: flex-end; }
 }
+
+/* ============ 附件上传行 ============ */
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+
+/* ============ 音乐播放器 ============ */
+.music-player {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.music-fab {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, .4);
+  transition: transform .15s, background .2s;
+}
+.music-fab:hover { background: var(--accent-hover); transform: scale(1.06); }
+.music-fab:active { transform: scale(.95); }
+
+.music-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-lg);
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.music-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.music-name {
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.music-status {
+  font-size: 12px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.music-controls {
+  display: flex;
+  gap: 6px;
+  justify-content: space-between;
+}
+.music-controls button {
+  flex: 1;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 8px 0;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
+}
+.music-controls button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.music-controls button:active { transform: scale(.96); }
+
+@media (max-width: 640px) {
+  .music-player { right: 14px; bottom: 14px; }
+  .music-fab { width: 46px; height: 46px; font-size: 20px; }
+  .music-panel { width: calc(100vw - 40px); max-width: 320px; }
+}

@@ -1,5 +1,6 @@
 const STORAGE_KEY = 'blog_gh_settings';
 const IMG_DIR = 'assets/images';
+const FILE_DIR = 'assets/files';
 
 function applyConfig() {
   document.getElementById('site-title').textContent = SITE_CONFIG.title;
@@ -55,7 +56,6 @@ async function publishPost({ title, date, tags, excerpt, body }) {
   const slug = makeSlug(title, date);
   const tagLine = tags.length ? `[${tags.join(', ')}]` : '[]';
 
-  // 用模板字符串拼接，保证换行正确
   const fileContent = `---
 title: ${title}
 date: ${date}
@@ -91,7 +91,7 @@ ${body}
   return slug;
 }
 
-/* ============ 图片上传 ============ */
+/* ============ 通用：把 File 转 base64 ============ */
 function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -104,6 +104,7 @@ function blobToBase64(blob) {
   });
 }
 
+/* ============ 图片上传 ============ */
 async function uploadImage(file) {
   const settings = getSettings();
   if (!settings) throw new Error('请先点击「设置」填写 GitHub 信息');
@@ -135,6 +136,45 @@ async function uploadImage(file) {
   return path;
 }
 
+/* ============ 压缩包上传 ============ */
+async function uploadFile(file) {
+  const settings = getSettings();
+  if (!settings) throw new Error('请先点击「设置」填写 GitHub 信息');
+  if (file.size > 25 * 1024 * 1024) throw new Error('文件超过 25MB');
+
+  const allowed = ['.zip', '.rar', '.7z', '.tar', '.gz', '.tgz', '.xz', '.bz2'];
+  const lower = file.name.toLowerCase();
+  if (!allowed.some(ext => lower.endsWith(ext))) {
+    throw new Error('只支持压缩包格式');
+  }
+
+  // 保留原文件名（做安全处理）
+  const safeName = file.name.replace(/[^\w.\-\u4e00-\u9fa5]+/g, '_');
+  const name = `file-${Date.now().toString(36)}-${safeName}`;
+  const path = `${FILE_DIR}/${name}`;
+  const content = await blobToBase64(file);
+  const url = `https://api.github.com/repos/${settings.owner}/${settings.repo}/contents/${path}`;
+
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `token ${settings.token}`,
+      'Accept': 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      message: `上传文件：${file.name}`,
+      content
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `上传失败 (${res.status})`);
+  }
+  return { path, originalName: file.name };
+}
+
+/* ============ 插入到正文 ============ */
 function insertToBody(md) {
   const ta = document.getElementById('body');
   const start = ta.selectionStart ?? ta.value.length;
@@ -148,7 +188,8 @@ function insertToBody(md) {
   ta.selectionStart = ta.selectionEnd = (before + prefix + md).length;
 }
 
-async function handleFiles(files) {
+/* ============ 图片流程 ============ */
+async function handleImages(files) {
   const list = document.getElementById('image-list');
   for (const f of files) {
     const item = document.createElement('div');
@@ -157,7 +198,6 @@ async function handleFiles(files) {
     list.appendChild(item);
     try {
       const path = await uploadImage(f);
-      // 用 base 拼成绝对路径，保证任何页面都能加载
       const base = SITE_CONFIG.base || '/';
       const md = `![${f.name}](${base}${path})`;
       insertToBody(md);
@@ -170,7 +210,29 @@ async function handleFiles(files) {
   }
 }
 
-/* ============ 事件绑定 ============ */
+/* ============ 压缩包流程 ============ */
+async function handleFiles(files) {
+  const list = document.getElementById('file-list');
+  for (const f of files) {
+    const item = document.createElement('div');
+    item.className = 'image-item';
+    item.textContent = `上传中：${f.name} …`;
+    list.appendChild(item);
+    try {
+      const { path, originalName } = await uploadFile(f);
+      const base = SITE_CONFIG.base || '/';
+      const md = `📦 [下载：${originalName}](${base}${path})`;
+      insertToBody(md);
+      item.textContent = `✓ ${f.name} → 已插入下载链接`;
+      item.classList.add('ok');
+    } catch (e) {
+      item.textContent = `✗ ${f.name}：${e.message}`;
+      item.classList.add('error');
+    }
+  }
+}
+
+/* ============ 事件绑定：表单 ============ */
 document.getElementById('write-form').addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -206,6 +268,7 @@ document.getElementById('write-form').addEventListener('submit', async (e) => {
     document.getElementById('excerpt').value = '';
     document.getElementById('body').value = '';
     document.getElementById('image-list').innerHTML = '';
+    document.getElementById('file-list').innerHTML = '';
   } catch (err) {
     setStatus('发布失败：' + err.message, 'error');
   } finally {
@@ -232,11 +295,11 @@ document.getElementById('settings-modal').addEventListener('click', (e) => {
   if (e.target.id === 'settings-modal') closeSettings();
 });
 
-/* 图片相关事件 */
+/* ============ 图片事件 ============ */
 const imageInput = document.getElementById('image-input');
 document.getElementById('image-pick').addEventListener('click', () => imageInput.click());
 imageInput.addEventListener('change', (e) => {
-  if (e.target.files.length) handleFiles(e.target.files);
+  if (e.target.files.length) handleImages(e.target.files);
   e.target.value = '';
 });
 
@@ -248,7 +311,7 @@ const drop = document.getElementById('image-drop');
   drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('dragging'); });
 });
 drop.addEventListener('drop', (e) => {
-  if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+  if (e.dataTransfer.files.length) handleImages(e.dataTransfer.files);
 });
 
 document.addEventListener('paste', (e) => {
@@ -262,11 +325,19 @@ document.addEventListener('paste', (e) => {
   }
   if (files.length) {
     e.preventDefault();
-    handleFiles(files);
+    handleImages(files);
   }
 });
 
-/* 初始化 */
+/* ============ 压缩包事件 ============ */
+const fileInput = document.getElementById('file-input');
+document.getElementById('file-pick').addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files.length) handleFiles(e.target.files);
+  e.target.value = '';
+});
+
+/* ============ 初始化 ============ */
 applyConfig();
 
 const dateInput = document.getElementById('date');

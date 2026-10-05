@@ -5,5 +5,9 @@ const SITE_CONFIG = {
   // 仓库路径前缀，必须以 / 开头和结尾
   // 如果 Pages 地址是 https://用户名.github.io/仓库名/，这里填 '/仓库名/'
   // 如果 Pages 地址是 https://用户名.github.io/，这里填 '/'
-  base: '/Personal-website/'
+  base: '/Personal-website/',
+
+  music:[
+    
+  ]
 };

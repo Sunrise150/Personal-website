@@ -56,6 +56,16 @@
       </div>
 
       <div class="field">
+        <label>上传附件（压缩包）</label>
+        <div class="file-row">
+          <input type="file" id="file-input" accept=".zip,.rar,.7z,.tar,.gz,.tgz,.xz,.bz2" hidden>
+          <button type="button" id="file-pick" class="ghost-btn">选择压缩包</button>
+          <span class="hint">支持 zip / rar / 7z / tar.gz 等，单个不超过 25MB</span>
+        </div>
+        <div id="file-list" class="image-list"></div>
+      </div>
+
+      <div class="field">
         <label for="body">正文（支持 Markdown）</label>
         <textarea id="body" rows="18" required placeholder="# 标题&#10;&#10;正文内容……"></textarea>
       </div>
@@ -96,7 +106,8 @@
     </div>
   </div>
 
-  <script src="assets/js/config.js"></script>
+  <script src="assets/js/config.js?v=2"></script>
   <script src="assets/js/write.js"></script>
+  <script src="assets/js/player.js"></script>
 </body>
 </html>
