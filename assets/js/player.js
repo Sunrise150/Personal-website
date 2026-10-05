@@ -186,14 +186,30 @@
         pendingResume = false;
         $('music-play').textContent = '❚❚';
         updateName();
-      }).catch(() => {
-        // 自动播放策略阻止：标记待恢复，UI 保持暂停状态
-        pendingResume = true;
-        playing = false;
-        $('music-play').textContent = '▶';
-        // 提示用户点击即可恢复
-        const sub = $('music-sub');
-        if (sub) sub.textContent = '点击页面任意位置恢复播放';
+      }).catch((err) => {
+        // 调试输出，便于定位真实错误（src 404 / 格式不支持 / autoplay 阻止）
+        console.warn('[player] play() rejected:', err,
+          '| src:', a.src,
+          '| readyState:', a.readyState,
+          '| networkState:', a.networkState,
+          '| error:', a.error);
+        const errName = (err && err.name) || '';
+        if (errName === 'NotAllowedError' || errName === 'AbortError') {
+          // autoplay 阻止或被打断：标记待恢复
+          pendingResume = true;
+          playing = false;
+          $('music-play').textContent = '▶';
+          const sub = $('music-sub');
+          if (sub) sub.textContent = '点击页面任意位置恢复播放';
+        } else {
+          // 其他错误（如 NotSupportedError：src 404 或格式不支持）
+          pendingResume = false;
+          playing = false;
+          $('music-play').textContent = '▶';
+          const sub = $('music-sub');
+          const msg = (err && err.message) || errName || '未知错误';
+          if (sub) sub.textContent = '无法播放：' + msg;
+        }
       });
     } else {
       // 旧浏览器同步返回
@@ -261,24 +277,16 @@
         updateName();
         renderList();
 
-        // 尝试自动续播；autoplay 被阻止时设 pendingResume，首次交互即恢复
+        // 关键：不在此处调用 a.play()！
+        // 页面加载时无用户手势，a.play() 必然被 reject，且会让 _audio 元素
+        // 进入 interrupted 状态，导致后续用户点击时的 a.play() 也失败。
+        // 改为只设置 pendingResume 标志，等用户首次点击触发 play()。
         if (s.playing || s.pendingResume) {
-          const p = a.play();
-          if (p && p.then) {
-            p.then(() => {
-              playing = true;
-              pendingResume = false;
-              $('music-play').textContent = '❚❚';
-              updateName();
-            }).catch(() => {
-              // autoplay 被阻止：等用户首次交互（onFirstInteraction 会处理）
-              pendingResume = true;
-              playing = false;
-              $('music-play').textContent = '▶';
-              const sub = $('music-sub');
-              if (sub) sub.textContent = '点击页面任意位置恢复播放';
-            });
-          }
+          pendingResume = true;
+          playing = false;
+          $('music-play').textContent = '▶';
+          const sub = $('music-sub');
+          if (sub) sub.textContent = '点击页面任意位置恢复播放';
         }
       }
     } catch (e) {}
