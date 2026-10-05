@@ -756,3 +756,94 @@ nav a:hover, nav a.active { color: var(--text); }
   .music-admin-item { flex-direction: column; align-items: stretch; }
   .music-admin-actions { justify-content: flex-end; }
 }
+/* ============ 房间人数查看页 ============ */
+.rooms-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  align-items: center;
+  margin: 12px 0 24px;
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+.rooms-stat {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.rooms-stat strong {
+  color: var(--text);
+  font-weight: 700;
+  font-size: 16px;
+  margin-left: 4px;
+}
+.rooms-stat-time {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+.rooms-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 16px;
+}
+
+.rooms-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.rooms-table th,
+.rooms-table td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.rooms-table th {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-muted);
+  font-weight: 600;
+  background: var(--bg);
+}
+.rooms-table tbody tr:last-child td { border-bottom: none; }
+.rooms-table tbody tr:hover { background: var(--tag-bg); }
+.rooms-table .col-idx { width: 48px; color: var(--text-muted); }
+.rooms-table .col-ip { font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; font-size: 13px; }
+.rooms-table .col-port { font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; font-size: 13px; color: var(--text-muted); }
+.rooms-table .col-count { font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; font-size: 13px; }
+.rooms-table .col-name { white-space: normal; word-break: break-word; min-width: 180px; }
+
+.rooms-table tr.room-unknown { opacity: .55; }
+.rooms-table tr.room-unknown .col-name {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.rooms-loading {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 32px 0 !important;
+}
+
+.rooms-footer-hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 60px;
+}
+
+@media (max-width: 640px) {
+  .rooms-table th,
+  .rooms-table td { padding: 10px 10px; font-size: 13px; }
+  .rooms-table .col-idx { width: 36px; }
+  .rooms-table .col-name { min-width: 120px; }
+  .rooms-stat-time { margin-left: 0; width: 100%; }
+}

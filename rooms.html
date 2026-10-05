@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>房间人数查看</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="site-title" id="site-title"></a>
+      <nav>
+        <a href="index.html">文章</a>
+        <a href="write.html">写文章</a>
+        <a href="manage.html">管理</a>
+        <a href="music.html">音乐</a>
+        <a href="rooms.html" class="active">房间人数查看</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <h1 class="page-title">房间人数查看</h1>
+
+    <div class="rooms-summary" id="rooms-summary">
+      <span class="rooms-stat">加载中…</span>
+    </div>
+
+    <div class="rooms-table-wrap">
+      <table class="rooms-table">
+        <thead>
+          <tr>
+            <th class="col-idx">#</th>
+            <th class="col-ip">房间 IP 地址</th>
+            <th class="col-port">端口</th>
+            <th class="col-count">在线 / 容量</th>
+            <th class="col-name">房间名称</th>
+          </tr>
+        </thead>
+        <tbody id="rooms-body">
+          <tr><td colspan="5" class="rooms-loading">加载中…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="rooms-footer-hint" id="rooms-footer-hint"></p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container"><p id="footer-text"></p></div>
+  </footer>
+
+  <script src="assets/js/config.js?v=3"></script>
+  <script src="assets/js/rooms.js"></script>
+  <script src="assets/js/player.js?v=8"></script>
+</body>
+</html>
