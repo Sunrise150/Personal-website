@@ -115,23 +115,19 @@
     drawer.classList.add('is-' + m);
   }
 
-  /* ============ 修复：absSrc 智能路径，本地开发与 GitHub Pages 兼容 ============ */
-  // 之前 base='/Personal-website/' 在本地 python http.server 上是错的（仓库根=server根）
-  // 导致 src 404，错误为 "The element has no supported sources"
-  // 现在检测本地环境用相对路径，GitHub Pages 用 base 拼接
+  /* ============ absSrc：始终用相对路径，避免 base 配置和环境判断的坑 ============ */
+  // 之前用 base 拼接 + isLocal 判断，结果在 GitHub Pages 上 base 没正确加载
+  // 导致 src='/Personal-website/assets/...' 没拼上，变成 '/assets/...' → 404
+  // 现在始终用相对路径，让浏览器基于当前页面 URL 解析：
+  // - 本地: http://localhost:8765/music.html + assets/music/x.mp3 → http://localhost:8765/assets/music/x.mp3 ✓
+  // - GitHub 项目 Pages: https://sunrise150.github.io/Personal-website/music.html + assets/music/x.mp3 → https://sunrise150.github.io/Personal-website/assets/music/x.mp3 ✓
+  // 前提：所有 HTML 页面都在仓库根目录（没有子目录），符合本站结构
   function absSrc(src) {
     if (!src) return '';
-    if (/^https?:\/\//.test(src)) return src; // 完整 URL
-    if (src.startsWith('/')) return encodeURI(src); // 绝对路径
-    // 本地开发环境（localhost / 127.* / file:）：用相对路径让浏览器解析
-    // GitHub Pages：用 base 拼接
-    const host = location.hostname || '';
-    const isLocal = !host || host === 'localhost' ||
-      /^127\./.test(host) || /^192\.168\./.test(host) ||
-      /^10\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
-      location.protocol === 'file:';
-    const prefix = isLocal ? '' : (base || '/');
-    return encodeURI(prefix + src);
+    if (/^https?:\/\//.test(src)) return src; // 完整 URL，直接用
+    // 用相对路径，让浏览器基于当前页面 URL 解析
+    // encodeURI 编码中文文件名
+    return encodeURI(src);
   }
 
   function currentItem() {
