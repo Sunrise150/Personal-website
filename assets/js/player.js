@@ -299,6 +299,34 @@
   $('music-prev').addEventListener('click', () => load(current - 1, playing, true));
   $('music-next').addEventListener('click', () => load(current + 1, playing, true));
 
+  /* ============ 修复：接收 music-manage.js 派发的最新列表 ============ */
+  // 音乐管理页通过 GitHub API 拿到的列表比本地 data/music.json 新（Actions 还没跑）
+  // 接收后更新抽屉列表，否则抽屉显示空列表导致播放无声音
+  window.addEventListener('blog:music-list', (e) => {
+    const list = e && e.detail;
+    if (!Array.isArray(list)) return;
+    MUSIC = list;
+    // 同步缓存
+    try {
+      sessionStorage.setItem(MUSIC_CACHE_KEY, JSON.stringify({ data: list, ts: Date.now() }));
+    } catch (e2) {}
+    // 当前索引若超出范围则归零
+    if (current >= MUSIC.length) current = 0;
+    renderList();
+    updateName();
+    // 若未播放且未预热 audio，列表更新后无需额外动作；
+    // 若正在播放或待恢复，让 src 保持，下次切歌会用到新列表
+  });
+
+  /* ============ 修复：点击抽屉外部关闭抽屉 ============ */
+  // 抽屉展开时，点击正文区域自动收起
+  document.addEventListener('click', (e) => {
+    if (mode !== 'expanded' && mode !== 'peek') return;
+    // 点击抽屉自身或抽屉内任意元素，不处理
+    if (e.target && e.target.closest && e.target.closest('#music-drawer')) return;
+    setMode('collapsed');
+  });
+
   /* ============ 修复问题2：可靠的状态保存事件 ============ */
   // pagehide 比 beforeunload 更可靠（移动端、bfcache 等场景）
   window.addEventListener('pagehide', save);

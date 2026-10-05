@@ -116,6 +116,10 @@ async function loadMusicList(force = false) {
   try { list = JSON.parse(meta.content); } catch (e) { list = []; }
   if (!Array.isArray(list)) list = [];
   musicCache = { list, sha: meta.sha, ts: Date.now() };
+  // 派发事件让音乐抽屉（player.js）共享最新列表，避免抽屉读到本地陈旧 data/music.json
+  try {
+    window.dispatchEvent(new CustomEvent('blog:music-list', { detail: list }));
+  } catch (e) {}
   return musicCache;
 }
 
