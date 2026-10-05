@@ -3,6 +3,9 @@
   const STORAGE_KEY = 'blog_music_state';
   const MUSIC_CACHE_KEY = 'blog_music_json';
   const MUSIC_CACHE_TTL = 60000;
+  const MODE_KEY = 'blog_music_playmode';
+  // 播放模式：order=顺序循环（默认）, random=随机, one=单曲循环
+  let playMode = 'order';
 
   let MUSIC = [];
   let current = 0;
@@ -18,9 +21,23 @@
     if (_audio) return _audio;
     _audio = new Audio();
     _audio.preload = 'auto';
-    _audio.addEventListener('ended', () => load(current + 1, true, true));
+    _audio.addEventListener('ended', () => {
+      // 根据播放模式决定下一首
+      if (playMode === 'one') {
+        load(current, true, false); // 重新加载当前歌曲
+      } else if (playMode === 'random') {
+        let nextIdx = current;
+        if (MUSIC.length > 1) {
+          while (nextIdx === current) nextIdx = Math.floor(Math.random() * MUSIC.length);
+        }
+        load(nextIdx, true, true);
+      } else {
+        // order：顺序循环
+        load(current + 1, true, true);
+      }
+    });
     _audio.addEventListener('play', () => {
-      // 浏览器真正开始播放时同步 UI（覆盖各种来源的 play 状态）
+      // 浏器真正开始播放时同步 UI（覆盖各种来源的 play 状态）
       playing = true;
       pendingResume = false;
       $('music-play').textContent = '❚❚';
@@ -55,6 +72,7 @@
           <button id="music-prev" aria-label="上一首">⏮</button>
           <button id="music-play" aria-label="播放/暂停">▶</button>
           <button id="music-next" aria-label="下一首">⏭</button>
+          <button id="music-mode" class="music-mode-btn" aria-label="播放模式" title="顺序循环">↻</button>
         </div>
         <div class="music-list" id="music-list">
           <div class="music-list-empty">加载中…</div>
@@ -78,25 +96,18 @@
     if (!a.src) a.src = absSrc(item.src);
   }
 
-  // 首次任意交互（click / keydown）触发预热，并处理被阻止的 autoplay 恢复
-  function onFirstInteraction(e) {
-    // 跳过音乐抽屉自身的点击，避免与播放按钮的 handler 冲突
-    if (e && e.target && e.target.closest && e.target.closest('#music-drawer')) {
-      warmup(); // 仍预热
-      return;
-    }
-    warmup();
-    if (pendingResume) {
-      pendingResume = false;
-      play();
-    }
-    window.removeEventListener('click', onFirstInteraction, true);
-    window.removeEventListener('keydown', onFirstInteraction, true);
-    document.removeEventListener('touchstart', onFirstInteraction, true);
+  /* ============ 修复：autoplay 被阻止后的恢复机制 ============ */
+  // 用冒泡阶段监听，避免捕获阶段提前触发导致用户激活丢失
+  // 跳过 music-play 按钮和抽屉内的点击，让按钮自己的 handler 处理 play/pause
+  function onDocClick(e) {
+    if (!pendingResume) return;
+    const t = e.target;
+    if (t && t.id === 'music-play') return; // 让按钮自己处理
+    if (t && t.closest && t.closest('#music-drawer')) return; // 抽屉内点击不触发恢复
+    pendingResume = false;
+    play();
   }
-  window.addEventListener('click', onFirstInteraction, true);
-  window.addEventListener('keydown', onFirstInteraction, true);
-  document.addEventListener('touchstart', onFirstInteraction, true);
+  document.addEventListener('click', onDocClick);
 
   function setMode(m) {
     mode = m;
@@ -104,10 +115,23 @@
     drawer.classList.add('is-' + m);
   }
 
+  /* ============ 修复：absSrc 智能路径，本地开发与 GitHub Pages 兼容 ============ */
+  // 之前 base='/Personal-website/' 在本地 python http.server 上是错的（仓库根=server根）
+  // 导致 src 404，错误为 "The element has no supported sources"
+  // 现在检测本地环境用相对路径，GitHub Pages 用 base 拼接
   function absSrc(src) {
     if (!src) return '';
-    if (/^https?:\/\//.test(src) || src.startsWith('/')) return src;
-    return base + src;
+    if (/^https?:\/\//.test(src)) return src; // 完整 URL
+    if (src.startsWith('/')) return encodeURI(src); // 绝对路径
+    // 本地开发环境（localhost / 127.* / file:）：用相对路径让浏览器解析
+    // GitHub Pages：用 base 拼接
+    const host = location.hostname || '';
+    const isLocal = !host || host === 'localhost' ||
+      /^127\./.test(host) || /^192\.168\./.test(host) ||
+      /^10\./.test(host) || /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+      location.protocol === 'file:';
+    const prefix = isLocal ? '' : (base || '/');
+    return encodeURI(prefix + src);
   }
 
   function currentItem() {
@@ -248,6 +272,7 @@
         time: a ? a.currentTime || 0 : 0,
         playing,
         pendingResume,
+        playMode,
         ts: Date.now()
       }));
     } catch (e) {}
@@ -258,6 +283,11 @@
     try {
       const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
       if (!s || !MUSIC.length) return;
+      // 恢复播放模式
+      if (s.playMode && ['order', 'random', 'one'].includes(s.playMode)) {
+        playMode = s.playMode;
+        updateModeBtn();
+      }
       if (typeof s.current === 'number' && s.current < MUSIC.length) {
         current = s.current;
         const item = currentItem();
@@ -292,6 +322,35 @@
     } catch (e) {}
   }
 
+  /* ============ 播放模式切换 ============ */
+  function updateModeBtn() {
+    const btn = $('music-mode');
+    if (!btn) return;
+    if (playMode === 'order') {
+      btn.textContent = '↻';
+      btn.title = '顺序循环';
+      btn.classList.remove('is-random', 'is-one');
+    } else if (playMode === 'random') {
+      btn.textContent = '⇄';
+      btn.title = '随机播放';
+      btn.classList.add('is-random');
+      btn.classList.remove('is-one');
+    } else if (playMode === 'one') {
+      btn.textContent = '↺';
+      btn.title = '单曲循环';
+      btn.classList.add('is-one');
+      btn.classList.remove('is-random');
+    }
+  }
+
+  function togglePlayMode() {
+    if (playMode === 'order') playMode = 'random';
+    else if (playMode === 'random') playMode = 'one';
+    else playMode = 'order';
+    updateModeBtn();
+    save();
+  }
+
   /* 事件 */
   $('music-tab').addEventListener('click', () => {
     if (mode === 'expanded') setMode('collapsed');
@@ -306,6 +365,7 @@
 
   $('music-prev').addEventListener('click', () => load(current - 1, playing, true));
   $('music-next').addEventListener('click', () => load(current + 1, playing, true));
+  $('music-mode').addEventListener('click', togglePlayMode);
 
   /* ============ 修复：接收 music-manage.js 派发的最新列表 ============ */
   // 音乐管理页通过 GitHub API 拿到的列表比本地 data/music.json 新（Actions 还没跑）

@@ -509,6 +509,12 @@ nav a:hover, nav a.active { color: var(--text); }
   color: var(--accent);
 }
 .music-controls button:active { transform: scale(.96); }
+.music-controls .music-mode-btn.is-random,
+.music-controls .music-mode-btn.is-one {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--bg-alt, rgba(0,0,0,.03));
+}
 
 @media (max-width: 640px) {
   .music-player { right: 14px; bottom: 14px; }
@@ -654,6 +660,12 @@ nav a:hover, nav a.active { color: var(--text); }
   color: var(--accent);
 }
 .music-controls button:active { transform: scale(.96); }
+.music-controls .music-mode-btn.is-random,
+.music-controls .music-mode-btn.is-one {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--bg-alt, rgba(0,0,0,.03));
+}
 
 .music-list {
   max-height: 240px;
