@@ -2,30 +2,41 @@
   const base = (window.SITE_CONFIG && SITE_CONFIG.base) || '/';
   const STORAGE_KEY = 'blog_music_state';
   const MUSIC_CACHE_KEY = 'blog_music_json';
-  const MUSIC_CACHE_TTL = 60000; // 60s 内跨页复用 music.json，避免每页都 fetch
+  const MUSIC_CACHE_TTL = 60000;
 
   let MUSIC = [];
   let current = 0;
   let playing = false;
-  let mode = 'collapsed'; // collapsed | peek | expanded
+  let mode = 'collapsed';
   let peekTimer = null;
+  let pendingResume = false; // autoplay 被阻止时，等待用户首次交互后恢复
 
-  // 性能优化：延迟创建 Audio，首次播放时才实例化
+  /* ============ 性能优化：懒创建 Audio，但首次用户交互即预热 ============ */
   let _audio = null;
-  function audio() {
-    if (!_audio) {
-      _audio = new Audio();
-      _audio.preload = 'auto';
-      _audio.addEventListener('ended', () => load(current + 1, true, true));
-      let lastSave = 0;
-      _audio.addEventListener('timeupdate', () => {
-        const now = Date.now();
-        if (now - lastSave > 1000) {
-          lastSave = now;
-          save();
-        }
-      });
-    }
+
+  function ensureAudio() {
+    if (_audio) return _audio;
+    _audio = new Audio();
+    _audio.preload = 'auto';
+    _audio.addEventListener('ended', () => load(current + 1, true, true));
+    _audio.addEventListener('play', () => {
+      // 浏览器真正开始播放时同步 UI（覆盖各种来源的 play 状态）
+      playing = true;
+      pendingResume = false;
+      $('music-play').textContent = '❚❚';
+      updateName();
+    });
+    let lastSave = 0;
+    _audio.addEventListener('timeupdate', () => {
+      const now = Date.now();
+      if (now - lastSave > 1000) {
+        lastSave = now;
+        save();
+      }
+    });
+    _audio.addEventListener('loadedmetadata', save);
+    // 注：不绑定 pause 事件，避免切换 src 时触发 pause 导致 UI 闪烁
+    // pause 状态由 play() Promise 的 catch 与 pause() 函数显式管理
     return _audio;
   }
 
@@ -56,6 +67,36 @@
 
   const $ = id => document.getElementById(id);
   const drawer = $('music-drawer');
+
+  /* ============ 预热：用户首次任意交互即创建 Audio 并预载 src ============ */
+  // 解决问题1：响应缓慢。这样真正点播放时 Audio 已 ready，几乎瞬时响应
+  function warmup() {
+    if (_audio) return;
+    const item = currentItem();
+    if (!item) return;
+    const a = ensureAudio();
+    if (!a.src) a.src = absSrc(item.src);
+  }
+
+  // 首次任意交互（click / keydown）触发预热，并处理被阻止的 autoplay 恢复
+  function onFirstInteraction(e) {
+    // 跳过音乐抽屉自身的点击，避免与播放按钮的 handler 冲突
+    if (e && e.target && e.target.closest && e.target.closest('#music-drawer')) {
+      warmup(); // 仍预热
+      return;
+    }
+    warmup();
+    if (pendingResume) {
+      pendingResume = false;
+      play();
+    }
+    window.removeEventListener('click', onFirstInteraction, true);
+    window.removeEventListener('keydown', onFirstInteraction, true);
+    document.removeEventListener('touchstart', onFirstInteraction, true);
+  }
+  window.addEventListener('click', onFirstInteraction, true);
+  window.addEventListener('keydown', onFirstInteraction, true);
+  document.addEventListener('touchstart', onFirstInteraction, true);
 
   function setMode(m) {
     mode = m;
@@ -118,7 +159,8 @@
   function load(index, autoplay, doPeek) {
     if (!MUSIC.length) return;
     current = (index + MUSIC.length) % MUSIC.length;
-    audio().src = absSrc(currentItem().src);
+    const a = ensureAudio();
+    a.src = absSrc(currentItem().src);
     updateName();
     renderList();
     if (autoplay) play();
@@ -126,26 +168,47 @@
     save();
   }
 
+  /* ============ 修复问题1：play() 正确处理 Promise，不再静默吞错 ============ */
   function play() {
     if (!MUSIC.length) {
       setMode('expanded');
       return;
     }
-    if (!audio().src) {
-      load(current, true, false);
-      return;
+    const a = ensureAudio();
+    if (!a.src) {
+      a.src = absSrc(currentItem().src);
     }
-    const p = audio().play();
-    if (p && p.catch) p.catch(() => {});
-    playing = true;
-    $('music-play').textContent = '❚❚';
-    updateName();
+    const p = a.play();
+    if (p && p.then) {
+      p.then(() => {
+        // 真正开始播放后才设状态（play 事件已处理，此处兜底）
+        playing = true;
+        pendingResume = false;
+        $('music-play').textContent = '❚❚';
+        updateName();
+      }).catch(() => {
+        // 自动播放策略阻止：标记待恢复，UI 保持暂停状态
+        pendingResume = true;
+        playing = false;
+        $('music-play').textContent = '▶';
+        // 提示用户点击即可恢复
+        const sub = $('music-sub');
+        if (sub) sub.textContent = '点击页面任意位置恢复播放';
+      });
+    } else {
+      // 旧浏览器同步返回
+      playing = true;
+      $('music-play').textContent = '❚❚';
+      updateName();
+    }
     save();
   }
 
   function pause() {
-    audio().pause();
+    if (!_audio) return; // 未创建 audio 时无需暂停
+    _audio.pause();
     playing = false;
+    pendingResume = false;
     $('music-play').textContent = '▶';
     updateName();
     save();
@@ -160,47 +223,62 @@
     }, 3500);
   }
 
+  /* ============ 修复问题2：localStorage 跨页保持状态 ============ */
   function save() {
     try {
-      const a = _audio; // 未初始化时无需保存播放进度
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+      const a = _audio;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
         current,
         time: a ? a.currentTime || 0 : 0,
-        playing
+        playing,
+        pendingResume,
+        ts: Date.now()
       }));
     } catch (e) {}
   }
 
+  /* ============ 修复问题2：跨页恢复 - 立即设置 src + currentTime ============ */
   function restore() {
     try {
-      const s = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || 'null');
+      const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
       if (!s || !MUSIC.length) return;
       if (typeof s.current === 'number' && s.current < MUSIC.length) {
         current = s.current;
-        // 仅当之前在播放时才创建 audio，避免无谓开销
-        if (s.playing || (typeof s.time === 'number' && s.time > 0)) {
-          audio().src = absSrc(currentItem().src);
+        const item = currentItem();
+        if (!item) return;
+
+        // 立即创建 audio 并设置 src，让浏览器并行预载
+        const a = ensureAudio();
+        a.src = absSrc(item.src);
+
+        // 恢复播放进度（loadedmetadata 后才能设 currentTime）
+        if (typeof s.time === 'number' && s.time > 0) {
+          const apply = () => { try { a.currentTime = s.time; } catch (e) {} };
+          if (a.readyState >= 1) apply();
+          else a.addEventListener('loadedmetadata', apply, { once: true });
         }
+
         updateName();
         renderList();
-      }
-      if (typeof s.time === 'number' && s.time > 0 && _audio) {
-        const a = audio();
-        const apply = () => { try { a.currentTime = s.time; } catch (e) {} };
-        if (a.readyState >= 1) apply();
-        else a.addEventListener('loadedmetadata', apply, { once: true });
-      }
-      if (s.playing) {
-        const p = audio().play();
-        if (p && p.then) {
-          p.then(() => {
-            playing = true;
-            $('music-play').textContent = '❚❚';
-            updateName();
-          }).catch(() => {
-            playing = false;
-            $('music-play').textContent = '▶';
-          });
+
+        // 尝试自动续播；autoplay 被阻止时设 pendingResume，首次交互即恢复
+        if (s.playing || s.pendingResume) {
+          const p = a.play();
+          if (p && p.then) {
+            p.then(() => {
+              playing = true;
+              pendingResume = false;
+              $('music-play').textContent = '❚❚';
+              updateName();
+            }).catch(() => {
+              // autoplay 被阻止：等用户首次交互（onFirstInteraction 会处理）
+              pendingResume = true;
+              playing = false;
+              $('music-play').textContent = '▶';
+              const sub = $('music-sub');
+              if (sub) sub.textContent = '点击页面任意位置恢复播放';
+            });
+          }
         }
       }
     } catch (e) {}
@@ -221,8 +299,13 @@
   $('music-prev').addEventListener('click', () => load(current - 1, playing, true));
   $('music-next').addEventListener('click', () => load(current + 1, playing, true));
 
-  // 性能优化：ended / timeupdate 事件已移入 audio() 延迟初始化中
+  /* ============ 修复问题2：可靠的状态保存事件 ============ */
+  // pagehide 比 beforeunload 更可靠（移动端、bfcache 等场景）
+  window.addEventListener('pagehide', save);
   window.addEventListener('beforeunload', save);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') save();
+  });
 
   /* 初始化：带 sessionStorage 缓存的 music.json，避免每次跳页都发请求 */
   (async function init() {
@@ -247,8 +330,8 @@
     } catch (e) {}
     renderList();
     updateName();
-    // 性能优化：不再预加载第一首的 src，仅在用户点击播放时才创建 audio
     if (MUSIC.length) {
+      // 立即恢复状态：设置 src + currentTime，并尝试续播
       restore();
     }
   })();
