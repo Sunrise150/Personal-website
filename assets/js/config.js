@@ -8,6 +8,6 @@ const SITE_CONFIG = {
   base: '/Personal-website/',
 
   music:[
-    
+    { name: 'GMR-恶魔城.被夺走的刻印 黄昏的圣痕', src: 'assets/music/GMR-恶魔城.被夺走的刻印 黄昏的圣痕.mp3' }
   ]
 };
