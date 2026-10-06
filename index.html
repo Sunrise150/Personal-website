@@ -131,6 +131,26 @@
             window.addEventListener('resize', adjustFrameHeight);
           }
         } catch (e) {}
+
+        // 修复：iframe 内点击事件不会冒泡到外层 shell
+        // 当抽屉展开时，用户在 iframe 内（如写文章正文）点击应让抽屉收回
+        // 同时拦截 index.html 链接，避免在 iframe 内嵌套 shell
+        try {
+          const iframeDoc = frame.contentDocument;
+          if (iframeDoc && !iframeDoc._shellClickBound) {
+            iframeDoc._shellClickBound = true;
+            iframeDoc.addEventListener('click', (e) => {
+              // 抽屉收回
+              if (window.__blogPlayer) window.__blogPlayer.collapse();
+              // 拦截 index.html 链接：在 iframe 内点击应加载 home.html，不嵌套 shell
+              const a = e.target.closest && e.target.closest('a[href="index.html"]');
+              if (a) {
+                e.preventDefault();
+                frame.src = 'home.html';
+              }
+            });
+          }
+        } catch (e) {}
       });
 
       // 导航链接点击：让 iframe 加载新页（不整页跳转）

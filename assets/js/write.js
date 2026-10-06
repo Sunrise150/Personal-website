@@ -2,6 +2,11 @@ const STORAGE_KEY = 'blog_gh_settings';
 const IMG_DIR = 'assets/images';
 const FILE_DIR = 'assets/files';
 
+/* ============ 草稿态：暂存图片和文件，发布时一起上传到 slug 子目录 ============ */
+// 取消文章时清空，避免仓库冗余文件
+const draftImages = []; // { file, blobUrl, name }
+const draftFiles = [];  // { file, name }
+
 function applyConfig() {
   document.getElementById('site-title').textContent = SITE_CONFIG.title;
   document.getElementById('footer-text').textContent = SITE_CONFIG.footer;
@@ -54,8 +59,58 @@ async function publishPost({ title, date, tags, excerpt, body }) {
   if (!settings) throw new Error('请先点击「设置」填写 GitHub 信息');
 
   const slug = makeSlug(title, date);
-  const tagLine = tags.length ? `[${tags.join(', ')}]` : '[]';
+  const base = SITE_CONFIG.base || '/';
 
+  // 上传草稿图片到 assets/images/<slug>/，替换正文占位符
+  for (let i = 0; i < draftImages.length; i++) {
+    const d = draftImages[i];
+    const ext = (d.name.match(/\.(\w+)$/) || [null, 'png'])[1].toLowerCase();
+    const imgName = `img-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
+    const path = `${IMG_DIR}/${slug}/${imgName}`;
+    const content = await blobToBase64(d.file);
+    const url = `https://api.github.com/repos/${settings.owner}/${settings.repo}/contents/${path}`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${settings.token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ message: `上传图片：${imgName}`, content })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `图片上传失败 (${res.status})`);
+    }
+    body = body.split(`draft://img/${i}`).join(`${base}${path}`);
+  }
+
+  // 上传草稿文件到 assets/files/<slug>/，替换正文占位符
+  for (let i = 0; i < draftFiles.length; i++) {
+    const d = draftFiles[i];
+    const safeName = d.name.replace(/[^\w.\-\u4e00-\u9fa5]+/g, '_');
+    const fileName = `file-${Date.now().toString(36)}-${safeName}`;
+    const path = `${FILE_DIR}/${slug}/${fileName}`;
+    const content = await blobToBase64(d.file);
+    const url = `https://api.github.com/repos/${settings.owner}/${settings.repo}/contents/${path}`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${settings.token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ message: `上传文件：${d.name}`, content })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `文件上传失败 (${res.status})`);
+    }
+    body = body.split(`draft://file/${i}`).join(`${base}${path}`);
+  }
+
+  // 发布文章
+  const tagLine = tags.length ? `[${tags.join(', ')}]` : '[]';
   const fileContent = `---
 title: ${title}
 date: ${date}
@@ -91,6 +146,15 @@ ${body}
   return slug;
 }
 
+/* 清空草稿（取消文章或发布成功后调用） */
+function clearDrafts() {
+  draftImages.forEach(d => { try { URL.revokeObjectURL(d.blobUrl); } catch (e) {} });
+  draftImages.length = 0;
+  draftFiles.length = 0;
+  document.getElementById('image-list').innerHTML = '';
+  document.getElementById('file-list').innerHTML = '';
+}
+
 /* ============ 通用：把 File 转 base64 ============ */
 function blobToBase64(blob) {
   return new Promise((resolve, reject) => {
@@ -104,75 +168,33 @@ function blobToBase64(blob) {
   });
 }
 
-/* ============ 图片上传 ============ */
-async function uploadImage(file) {
-  const settings = getSettings();
-  if (!settings) throw new Error('请先点击「设置」填写 GitHub 信息');
-  if (!file.type.startsWith('image/')) throw new Error('只能上传图片');
-  if (file.size > 5 * 1024 * 1024) throw new Error('图片超过 5MB');
+/* ============ Tab 缩进支持 ============ */
+const bodyTa = document.getElementById('body');
+bodyTa.addEventListener('keydown', (e) => {
+  if (e.key !== 'Tab') return;
+  e.preventDefault();
+  const start = bodyTa.selectionStart;
+  const end = bodyTa.selectionEnd;
 
-  const ext = (file.name.match(/\.(\w+)$/) || [null, 'png'])[1].toLowerCase();
-  const name = `img-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
-  const path = `${IMG_DIR}/${name}`;
-  const content = await blobToBase64(file);
-  const url = `https://api.github.com/repos/${settings.owner}/${settings.repo}/contents/${path}`;
-
-  const res = await fetch(url, {
-    method: 'PUT',
-    headers: {
-      'Authorization': `token ${settings.token}`,
-      'Accept': 'application/vnd.github.v3+json',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      message: `上传图片：${name}`,
-      content
-    })
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `上传失败 (${res.status})`);
+  if (e.shiftKey) {
+    // Shift+Tab：减少缩进（删除行首的 4 空格或 1 tab）
+    const before = bodyTa.value.slice(0, start);
+    const lineStart = before.lastIndexOf('\n') + 1;
+    const linePrefix = bodyTa.value.slice(lineStart, start);
+    let removed = 0;
+    if (linePrefix.startsWith('    ')) removed = 4;
+    else if (linePrefix.startsWith('\t')) removed = 1;
+    if (removed) {
+      bodyTa.value = bodyTa.value.slice(0, lineStart) + linePrefix.slice(removed) + bodyTa.value.slice(start);
+      const newSel = Math.max(lineStart, start - removed);
+      bodyTa.selectionStart = bodyTa.selectionEnd = newSel;
+    }
+  } else {
+    // Tab：插入 4 个空格
+    bodyTa.value = bodyTa.value.slice(0, start) + '    ' + bodyTa.value.slice(end);
+    bodyTa.selectionStart = bodyTa.selectionEnd = start + 4;
   }
-  return path;
-}
-
-/* ============ 压缩包上传 ============ */
-async function uploadFile(file) {
-  const settings = getSettings();
-  if (!settings) throw new Error('请先点击「设置」填写 GitHub 信息');
-  if (file.size > 25 * 1024 * 1024) throw new Error('文件超过 25MB');
-
-  const allowed = ['.zip', '.rar', '.7z', '.tar', '.gz', '.tgz', '.xz', '.bz2'];
-  const lower = file.name.toLowerCase();
-  if (!allowed.some(ext => lower.endsWith(ext))) {
-    throw new Error('只支持压缩包格式');
-  }
-
-  // 保留原文件名（做安全处理）
-  const safeName = file.name.replace(/[^\w.\-\u4e00-\u9fa5]+/g, '_');
-  const name = `file-${Date.now().toString(36)}-${safeName}`;
-  const path = `${FILE_DIR}/${name}`;
-  const content = await blobToBase64(file);
-  const url = `https://api.github.com/repos/${settings.owner}/${settings.repo}/contents/${path}`;
-
-  const res = await fetch(url, {
-    method: 'PUT',
-    headers: {
-      'Authorization': `token ${settings.token}`,
-      'Accept': 'application/vnd.github.v3+json',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      message: `上传文件：${file.name}`,
-      content
-    })
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `上传失败 (${res.status})`);
-  }
-  return { path, originalName: file.name };
-}
+});
 
 /* ============ 插入到正文 ============ */
 function insertToBody(md) {
@@ -188,47 +210,62 @@ function insertToBody(md) {
   ta.selectionStart = ta.selectionEnd = (before + prefix + md).length;
 }
 
-/* ============ 图片流程 ============ */
-async function handleImages(files) {
+/* ============ 图片流程：草稿态，发布时才上传 ============ */
+function handleImages(files) {
   const list = document.getElementById('image-list');
   for (const f of files) {
-    const item = document.createElement('div');
-    item.className = 'image-item';
-    item.textContent = `上传中：${f.name} …`;
-    list.appendChild(item);
-    try {
-      const path = await uploadImage(f);
-      const base = SITE_CONFIG.base || '/';
-      const md = `![${f.name}](${base}${path})`;
-      insertToBody(md);
-      item.textContent = `✓ ${f.name} → 已插入正文`;
-      item.classList.add('ok');
-    } catch (e) {
-      item.textContent = `✗ ${f.name}：${e.message}`;
-      item.classList.add('error');
+    if (!f.type.startsWith('image/')) {
+      const item = document.createElement('div');
+      item.className = 'image-item error';
+      item.textContent = `✗ ${f.name}：只能上传图片`;
+      list.appendChild(item);
+      continue;
     }
+    if (f.size > 5 * 1024 * 1024) {
+      const item = document.createElement('div');
+      item.className = 'image-item error';
+      item.textContent = `✗ ${f.name}：图片超过 5MB`;
+      list.appendChild(item);
+      continue;
+    }
+    const idx = draftImages.length;
+    const blobUrl = URL.createObjectURL(f);
+    draftImages.push({ file: f, blobUrl, name: f.name });
+    const item = document.createElement('div');
+    item.className = 'image-item ok';
+    item.innerHTML = `<img src="${blobUrl}" alt="" style="max-width:60px;max-height:60px;border-radius:6px;vertical-align:middle;margin-right:8px">✓ ${f.name}（草稿，发布时上传到文章专属目录）`;
+    list.appendChild(item);
+    insertToBody(`![${f.name}](draft://img/${idx})`);
   }
 }
 
-/* ============ 压缩包流程 ============ */
-async function handleFiles(files) {
+/* ============ 压缩包流程：草稿态，发布时才上传 ============ */
+function handleFiles(files) {
   const list = document.getElementById('file-list');
   for (const f of files) {
-    const item = document.createElement('div');
-    item.className = 'image-item';
-    item.textContent = `上传中：${f.name} …`;
-    list.appendChild(item);
-    try {
-      const { path, originalName } = await uploadFile(f);
-      const base = SITE_CONFIG.base || '/';
-      const md = `📦 [下载：${originalName}](${base}${path})`;
-      insertToBody(md);
-      item.textContent = `✓ ${f.name} → 已插入下载链接`;
-      item.classList.add('ok');
-    } catch (e) {
-      item.textContent = `✗ ${f.name}：${e.message}`;
-      item.classList.add('error');
+    if (f.size > 25 * 1024 * 1024) {
+      const item = document.createElement('div');
+      item.className = 'image-item error';
+      item.textContent = `✗ ${f.name}：文件超过 25MB`;
+      list.appendChild(item);
+      continue;
     }
+    const allowed = ['.zip', '.rar', '.7z', '.tar', '.gz', '.tgz', '.xz', '.bz2'];
+    const lower = f.name.toLowerCase();
+    if (!allowed.some(ext => lower.endsWith(ext))) {
+      const item = document.createElement('div');
+      item.className = 'image-item error';
+      item.textContent = `✗ ${f.name}：只支持压缩包格式`;
+      list.appendChild(item);
+      continue;
+    }
+    const idx = draftFiles.length;
+    draftFiles.push({ file: f, name: f.name });
+    const item = document.createElement('div');
+    item.className = 'image-item ok';
+    item.textContent = `✓ ${f.name}（草稿，发布时上传到文章专属目录）`;
+    list.appendChild(item);
+    insertToBody(`📦 [下载：${f.name}](draft://file/${idx})`);
   }
 }
 
@@ -267,14 +304,16 @@ document.getElementById('write-form').addEventListener('submit', async (e) => {
     document.getElementById('tags').value = '';
     document.getElementById('excerpt').value = '';
     document.getElementById('body').value = '';
-    document.getElementById('image-list').innerHTML = '';
-    document.getElementById('file-list').innerHTML = '';
+    clearDrafts();
   } catch (err) {
     setStatus('发布失败：' + err.message, 'error');
   } finally {
     btn.disabled = false;
   }
 });
+
+/* 取消链接：清空草稿，避免仓库冗余文件 */
+document.querySelector('.cancel-link').addEventListener('click', clearDrafts);
 
 document.getElementById('open-settings').addEventListener('click', openSettings);
 

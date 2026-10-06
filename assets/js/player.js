@@ -26,19 +26,20 @@
     _audio = new Audio();
     _audio.preload = 'auto';
     _audio.addEventListener('ended', () => {
-      // 根据播放模式决定下一首
-      if (playMode === 'one') {
-        load(current, true, false); // 重新加载当前歌曲
-      } else if (playMode === 'random') {
-        let nextIdx = current;
-        if (MUSIC.length > 1) {
-          while (nextIdx === current) nextIdx = Math.floor(Math.random() * MUSIC.length);
+      // 修复：用 setTimeout 0 让 ended 事件清理完，避免下一首 play() 被竞态拒绝
+      setTimeout(() => {
+        if (playMode === 'one') {
+          load(current, true, false);
+        } else if (playMode === 'random') {
+          let nextIdx = current;
+          if (MUSIC.length > 1) {
+            while (nextIdx === current) nextIdx = Math.floor(Math.random() * MUSIC.length);
+          }
+          load(nextIdx, true, true);
+        } else {
+          load(current + 1, true, true);
         }
-        load(nextIdx, true, true);
-      } else {
-        // order：顺序循环
-        load(current + 1, true, true);
-      }
+      }, 0);
     });
     _audio.addEventListener('play', () => {
       // 浏器真正开始播放时同步 UI（覆盖各种来源的 play 状态）
@@ -242,46 +243,58 @@
     if (!a.src) {
       a.src = absSrc(currentItem().src);
     }
-    const p = a.play();
-    if (p && p.then) {
-      p.then(() => {
-        // 真正开始播放后才设状态（play 事件已处理，此处兜底）
+
+    // 修复：src 刚切换时 readyState=0，直接调 a.play() 可能在某些浏览器中被
+    // AbortError 拒绝。改为等 canplay 事件再 play，确保新 src 已加载。
+    if (a.readyState < 2 && a.networkState !== 2) {
+      const onReady = () => {
+        a.removeEventListener('canplay', onReady);
+        doPlay();
+      };
+      a.addEventListener('canplay', onReady, { once: true });
+      if (a.networkState === 0) a.load();
+      return;
+    }
+
+    doPlay();
+
+    function doPlay() {
+      const p = a.play();
+      if (p && p.then) {
+        p.then(() => {
+          playing = true;
+          pendingResume = false;
+          $('music-play').textContent = '❚❚';
+          updateName();
+        }).catch((err) => {
+          console.warn('[player] play() rejected:', err,
+            '| src:', a.src,
+            '| readyState:', a.readyState,
+            '| networkState:', a.networkState,
+            '| error:', a.error);
+          const errName = (err && err.name) || '';
+          if (errName === 'NotAllowedError' || errName === 'AbortError') {
+            pendingResume = true;
+            playing = false;
+            $('music-play').textContent = '▶';
+            const sub = $('music-sub');
+            if (sub) sub.textContent = '点击页面任意位置恢复播放';
+          } else {
+            pendingResume = false;
+            playing = false;
+            $('music-play').textContent = '▶';
+            const sub = $('music-sub');
+            const msg = (err && err.message) || errName || '未知错误';
+            if (sub) sub.textContent = '无法播放：' + msg;
+          }
+        });
+      } else {
         playing = true;
-        pendingResume = false;
         $('music-play').textContent = '❚❚';
         updateName();
-      }).catch((err) => {
-        // 调试输出，便于定位真实错误（src 404 / 格式不支持 / autoplay 阻止）
-        console.warn('[player] play() rejected:', err,
-          '| src:', a.src,
-          '| readyState:', a.readyState,
-          '| networkState:', a.networkState,
-          '| error:', a.error);
-        const errName = (err && err.name) || '';
-        if (errName === 'NotAllowedError' || errName === 'AbortError') {
-          // autoplay 阻止或被打断：标记待恢复
-          pendingResume = true;
-          playing = false;
-          $('music-play').textContent = '▶';
-          const sub = $('music-sub');
-          if (sub) sub.textContent = '点击页面任意位置恢复播放';
-        } else {
-          // 其他错误（如 NotSupportedError：src 404 或格式不支持）
-          pendingResume = false;
-          playing = false;
-          $('music-play').textContent = '▶';
-          const sub = $('music-sub');
-          const msg = (err && err.message) || errName || '未知错误';
-          if (sub) sub.textContent = '无法播放：' + msg;
-        }
-      });
-    } else {
-      // 旧浏览器同步返回
-      playing = true;
-      $('music-play').textContent = '❚❚';
-      updateName();
+      }
+      save();
     }
-    save();
   }
 
   function pause() {
@@ -430,10 +443,12 @@
   // 抽屉展开时，点击正文区域自动收起
   document.addEventListener('click', (e) => {
     if (mode !== 'expanded' && mode !== 'peek') return;
-    // 点击抽屉自身或抽屉内任意元素，不处理
     if (e.target && e.target.closest && e.target.closest('#music-drawer')) return;
     setMode('collapsed');
   });
+
+  // 暴露全局函数，供 shell 在 iframe 内点击时调用（跨 iframe 边界）
+  window.__blogPlayer = { collapse: () => setMode('collapsed') };
 
   /* ============ 修复问题2：可靠的状态保存事件 ============ */
   // pagehide 比 beforeunload 更可靠（移动端、bfcache 等场景）
