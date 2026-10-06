@@ -78,6 +78,10 @@
           <button id="music-next" aria-label="下一首">⏭</button>
           <button id="music-mode" class="music-mode-btn" aria-label="播放模式" title="顺序循环">↻</button>
         </div>
+        <div class="music-search-bar">
+          <input type="search" id="music-search-input" placeholder="搜索曲目 / 歌手…" autocomplete="off">
+          <button type="button" id="music-search-clear" aria-label="清空" style="display:none">×</button>
+        </div>
         <div class="music-list" id="music-list">
           <div class="music-list-empty">加载中…</div>
         </div>
@@ -161,13 +165,30 @@
     }[m]));
   }
 
+  let MUSIC_QUERY = '';
+
+  function filterMusic(q) {
+    MUSIC_QUERY = q.trim().toLowerCase();
+    if (!MUSIC_QUERY) return MUSIC;
+    return MUSIC.map((m, i) => ({ m, i })).filter(({ m }) => {
+      const name = (m.name || '').toLowerCase();
+      const artist = (m.artist || '').toLowerCase();
+      return name.includes(MUSIC_QUERY) || artist.includes(MUSIC_QUERY);
+    });
+  }
+
   function renderList() {
     const list = $('music-list');
     if (!MUSIC.length) {
       list.innerHTML = '<div class="music-list-empty">还没有音乐，去「音乐」页面上传</div>';
       return;
     }
-    list.innerHTML = MUSIC.map((m, i) => `
+    const filtered = filterMusic($('music-search-input') ? $('music-search-input').value : '');
+    if (!filtered.length) {
+      list.innerHTML = '<div class="music-list-empty">没有匹配的音乐</div>';
+      return;
+    }
+    list.innerHTML = filtered.map(({ m, i }) => `
       <div class="music-list-item ${i === current ? 'active' : ''}" data-i="${i}">
         <span class="music-list-name">${escapeHtml(m.name || '未知曲目')}</span>
         <span class="music-list-artist">${escapeHtml(m.artist || '')}</span>
@@ -177,6 +198,25 @@
       el.addEventListener('click', () => {
         load(Number(el.dataset.i), true, false);
       });
+    });
+  }
+
+  function initMusicSearch() {
+    const input = $('music-search-input');
+    const clear = $('music-search-clear');
+    if (!input || !clear) return;
+    let timer = null;
+    input.addEventListener('input', (e) => {
+      const v = e.target.value;
+      clear.style.display = v ? '' : 'none';
+      clearTimeout(timer);
+      timer = setTimeout(() => renderList(), 200);
+    });
+    clear.addEventListener('click', () => {
+      input.value = '';
+      clear.style.display = 'none';
+      renderList();
+      input.focus();
     });
   }
 
@@ -426,6 +466,7 @@
     } catch (e) {}
     renderList();
     updateName();
+    initMusicSearch();
     if (MUSIC.length) {
       // 立即恢复状态：设置 src + currentTime，并尝试续播
       restore();

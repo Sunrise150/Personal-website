@@ -79,7 +79,9 @@ nav a:hover, nav a.active { color: var(--text); }
 html.is-framed .site-header,
 html.is-framed .site-footer,
 html.is-framed #music-drawer { display: none !important; }
-html.is-framed body { padding-top: 0; }
+html.is-framed, html.is-framed body { height: auto; min-height: 0; overflow: hidden; }
+html.is-framed body { padding-top: 0; display: block; }
+html.is-framed main.container { overflow-y: auto; max-height: none; height: auto; }
 html.is-framed .hero { padding-top: 32px; }
 
 .hero { padding: 72px 0 48px; text-align: center; }
@@ -89,6 +91,34 @@ html.is-framed .hero { padding-top: 32px; }
   font-weight: 700; letter-spacing: -.02em; margin-bottom: 12px;
 }
 .hero p { color: var(--text-muted); font-size: 16px; max-width: 520px; margin: 0 auto; }
+
+/* ============ 搜索框 ============ */
+.search-bar {
+  display: flex; align-items: center; gap: 8px;
+  margin: 0 0 24px;
+  padding: 10px 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.search-bar input[type="search"] {
+  flex: 1; min-width: 0;
+  border: 0; outline: 0; background: transparent;
+  font-size: 14px; color: var(--text);
+  font-family: inherit;
+}
+.search-bar input[type="search"]::-webkit-search-cancel-button { display: none; }
+.search-bar button {
+  flex-shrink: 0;
+  width: 24px; height: 24px;
+  border: 0; background: transparent;
+  color: var(--text-muted);
+  font-size: 18px; line-height: 1;
+  cursor: pointer; padding: 0;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.search-bar button:hover { color: var(--text); background: var(--border); }
 
 .post-list { display: flex; flex-direction: column; gap: 16px; padding-bottom: 80px; }
 .post-card {
@@ -677,6 +707,33 @@ html.is-framed .hero { padding-top: 32px; }
   color: var(--accent);
   background: var(--bg-alt, rgba(0,0,0,.03));
 }
+
+.music-search-bar {
+  display: flex; align-items: center; gap: 6px;
+  margin: 8px 0;
+  padding: 6px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.music-search-bar input[type="search"] {
+  flex: 1; min-width: 0;
+  border: 0; outline: 0; background: transparent;
+  font-size: 13px; color: var(--text);
+  font-family: inherit;
+}
+.music-search-bar input[type="search"]::-webkit-search-cancel-button { display: none; }
+.music-search-bar button {
+  flex-shrink: 0;
+  width: 20px; height: 20px;
+  border: 0; background: transparent;
+  color: var(--text-muted);
+  font-size: 16px; line-height: 1;
+  cursor: pointer; padding: 0;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.music-search-bar button:hover { color: var(--text); background: var(--border); }
 
 .music-list {
   max-height: 240px;
