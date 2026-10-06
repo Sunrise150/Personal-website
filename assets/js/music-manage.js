@@ -21,11 +21,21 @@ function getSettings() {
   } catch { return null; }
 }
 
+let _statusTimer = null;
 function setStatus(msg, type = '') {
   const el = document.getElementById('m-status');
   if (!el) return;
   el.textContent = msg;
   el.className = 'status ' + type;
+  // 重置可见状态
+  el.style.opacity = '1';
+  el.style.transition = '';
+  // 10 秒后缓慢淡出
+  clearTimeout(_statusTimer);
+  _statusTimer = setTimeout(() => {
+    el.style.transition = 'opacity 2s ease';
+    el.style.opacity = '0';
+  }, 10000);
 }
 
 function encodeBase64(str) {
@@ -167,11 +177,11 @@ function renderList(list) {
   wrap.replaceChildren(frag);
 }
 
-async function render() {
+async function render(force = false) {
   const wrap = document.getElementById('music-admin-list');
   if (!wrap) return;
   try {
-    const { list } = await loadMusicList();
+    const { list } = await loadMusicList(force);
     renderList(list);
   } catch (e) {
     wrap.innerHTML = `<p class="empty">加载失败：${e.message}</p>`;
@@ -333,3 +343,14 @@ document.getElementById('music-form').addEventListener('submit', async (e) => {
 
 applyConfig();
 render();
+
+// 刷新按钮：强制重新拉取列表
+const musicRefreshBtn = document.getElementById('music-refresh');
+if (musicRefreshBtn) {
+  musicRefreshBtn.addEventListener('click', () => {
+    musicRefreshBtn.classList.add('spinning');
+    render(true).finally(() => {
+      setTimeout(() => musicRefreshBtn.classList.remove('spinning'), 600);
+    });
+  });
+}

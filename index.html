@@ -21,9 +21,66 @@
       /* 高度由 JS 根据内容自适应 */
     }
     /* shell 自身的 site-header 与子页面共用样式，无需改动 */
+
+    /* 内置刷新按钮 */
+    .shell-refresh {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.25);
+      color: inherit;
+      font-size: 16px;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      margin-left: 8px;
+      transition: transform 0.6s ease, background 0.2s ease;
+    }
+    .shell-refresh:hover { background: rgba(255,255,255,0.12); }
+    .shell-refresh.spinning { transform: rotate(360deg); }
+
+    /* 背景流星动画：固定在视口底层，不阻挡交互 */
+    .meteor-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .meteor {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 6px 1px rgba(255,255,255,0.6);
+      opacity: 0;
+    }
+    .meteor::before {
+      content: '';
+      position: absolute;
+      top: 1px;
+      left: 0;
+      width: 120px;
+      height: 1px;
+      background: linear-gradient(90deg, currentColor, transparent);
+      transform-origin: left center;
+      opacity: 0.6;
+    }
+    @keyframes meteor-fall {
+      0% { opacity: 0; transform: translate(0,0) rotate(35deg) scale(0.6); }
+      10% { opacity: 1; }
+      100% { opacity: 0; transform: translate(-600px, 800px) rotate(35deg) scale(1); }
+    }
+    /* 让正文/导航等浮在流星之上 */
+    .site-header, .shell-frame, .site-footer, .music-drawer { position: relative; z-index: 1; }
   </style>
 </head>
 <body>
+  <div class="meteor-layer" id="meteor-layer" aria-hidden="true"></div>
   <header class="site-header">
     <div class="container header-inner">
       <a href="index.html" class="site-title" id="site-title">日出的blog</a>
@@ -33,6 +90,7 @@
         <a href="manage.html" data-path="manage.html">管理</a>
         <a href="music.html" data-path="music.html">音乐</a>
         <a href="rooms.html" data-path="rooms.html">房间人数查看</a>
+        <button id="shell-refresh" class="shell-refresh" type="button" title="刷新当前页（不影响音乐）" aria-label="刷新">↻</button>
       </nav>
     </div>
   </header>
@@ -173,7 +231,50 @@
       // iframe 内的链接默认会在 iframe 内打开新页（同源），无需额外处理
       // iframe load 事件会同步外层 URL
 
+      // 内置刷新按钮：仅重载 iframe 内容，不影响外层 shell 与音乐播放
+      const refreshBtn = document.getElementById('shell-refresh');
+      refreshBtn.addEventListener('click', () => {
+        refreshBtn.classList.add('spinning');
+        // 重新设置 src 触发 reload（即使 src 相同也会刷新）
+        const cur = frame.getAttribute('src');
+        frame.src = 'about:blank';
+        setTimeout(() => { frame.src = cur; }, 30);
+        setTimeout(() => refreshBtn.classList.remove('spinning'), 700);
+      });
+
       initFrame();
+    })();
+
+    /* ============ 背景流星：偶尔出现，不影响阅读 ============ */
+    (function () {
+      const layer = document.getElementById('meteor-layer');
+      if (!layer) return;
+      const colors = ['#ffffff', '#a8c5ff', '#ffd1a8', '#c9a8ff', '#a8ffd1'];
+      function spawn() {
+        const m = document.createElement('div');
+        m.className = 'meteor';
+        const startX = Math.random() * (window.innerWidth + 200) - 100;
+        const startY = -50 - Math.random() * 200;
+        m.style.left = startX + 'px';
+        m.style.top = startY + 'px';
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        m.style.color = color;
+        const dur = 1.2 + Math.random() * 1.2;
+        m.style.animation = `meteor-fall ${dur}s linear forwards`;
+        layer.appendChild(m);
+        setTimeout(() => m.remove(), dur * 1000 + 100);
+      }
+      // 每 4~10 秒随机一颗
+      function loop() {
+        spawn();
+        setTimeout(loop, 4000 + Math.random() * 6000);
+      }
+      // 切到后台时暂停，避免堆积
+      let timer = setTimeout(loop, 1500);
+      document.addEventListener('visibilitychange', () => {
+        clearTimeout(timer);
+        if (!document.hidden) timer = setTimeout(loop, 1500);
+      });
     })();
   </script>
 </body>

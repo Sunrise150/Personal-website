@@ -104,6 +104,17 @@ async function loadRooms() {
 applyConfig();
 loadRooms();
 
+// 刷新按钮
+const refreshBtn = document.getElementById('rooms-refresh');
+if (refreshBtn) {
+  refreshBtn.addEventListener('click', () => {
+    refreshBtn.classList.add('spinning');
+    loadRooms().finally(() => {
+      setTimeout(() => refreshBtn.classList.remove('spinning'), 600);
+    });
+  });
+}
+
 // 页面可见时每 60 秒重新拉一次（配合 Actions 每 5 分钟更新一次）
 setInterval(() => {
   if (!document.hidden) loadRooms();

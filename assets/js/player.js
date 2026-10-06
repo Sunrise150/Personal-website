@@ -233,32 +233,19 @@
     save();
   }
 
-  /* ============ 修复问题1：play() 正确处理 Promise，不再静默吞错 ============ */
+  /* ============ 修复问题1：play() 正确处理 Promise，重试 AbortError ============ */
   function play() {
     if (!MUSIC.length) {
       setMode('expanded');
       return;
     }
     const a = ensureAudio();
-    if (!a.src) {
-      a.src = absSrc(currentItem().src);
-    }
+    if (!a.src) a.src = absSrc(currentItem().src);
 
-    // 修复：src 刚切换时 readyState=0，直接调 a.play() 可能在某些浏览器中被
-    // AbortError 拒绝。改为等 canplay 事件再 play，确保新 src 已加载。
-    if (a.readyState < 2 && a.networkState !== 2) {
-      const onReady = () => {
-        a.removeEventListener('canplay', onReady);
-        doPlay();
-      };
-      a.addEventListener('canplay', onReady, { once: true });
-      if (a.networkState === 0) a.load();
-      return;
-    }
-
-    doPlay();
-
-    function doPlay() {
+    // 重试机制：src 刚切换时 play() 可能被 AbortError 拒绝
+    // 等一小段时间后重试，最多 8 次
+    let retries = 0;
+    function tryPlay() {
       const p = a.play();
       if (p && p.then) {
         p.then(() => {
@@ -267,12 +254,17 @@
           $('music-play').textContent = '❚❚';
           updateName();
         }).catch((err) => {
-          console.warn('[player] play() rejected:', err,
-            '| src:', a.src,
+          const errName = (err && err.name) || '';
+          console.warn('[player] play() rejected:', errName,
             '| readyState:', a.readyState,
             '| networkState:', a.networkState,
-            '| error:', a.error);
-          const errName = (err && err.name) || '';
+            '| retries:', retries);
+          // 自动切歌时 src 刚切换，AbortError 是正常的，重试
+          if (errName === 'AbortError' && retries < 8) {
+            retries++;
+            setTimeout(tryPlay, 250);
+            return;
+          }
           if (errName === 'NotAllowedError' || errName === 'AbortError') {
             pendingResume = true;
             playing = false;
@@ -293,8 +285,10 @@
         $('music-play').textContent = '❚❚';
         updateName();
       }
-      save();
     }
+
+    tryPlay();
+    save();
   }
 
   function pause() {

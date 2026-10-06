@@ -35,10 +35,21 @@ function closeSettings() {
   document.getElementById('settings-modal').hidden = true;
 }
 
+let _statusTimer = null;
 function setStatus(msg, type = '') {
   const el = document.getElementById('status');
+  if (!el) return;
   el.textContent = msg;
   el.className = 'status ' + type;
+  // 重置可见状态
+  el.style.opacity = '1';
+  el.style.transition = '';
+  // 10 秒后缓慢淡出
+  clearTimeout(_statusTimer);
+  _statusTimer = setTimeout(() => {
+    el.style.transition = 'opacity 2s ease';
+    el.style.opacity = '0';
+  }, 10000);
 }
 
 function encodeBase64(str) {
@@ -243,10 +254,11 @@ function handleImages(files) {
 function handleFiles(files) {
   const list = document.getElementById('file-list');
   for (const f of files) {
-    if (f.size > 25 * 1024 * 1024) {
+    // GitHub Contents API 单文件硬限制：100MB
+    if (f.size > 100 * 1024 * 1024) {
       const item = document.createElement('div');
       item.className = 'image-item error';
-      item.textContent = `✗ ${f.name}：文件超过 25MB`;
+      item.textContent = `✗ ${f.name}：文件超过 100MB（GitHub API 单文件上限）`;
       list.appendChild(item);
       continue;
     }
