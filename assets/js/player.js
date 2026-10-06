@@ -17,32 +17,38 @@
   let mode = 'collapsed';
   let peekTimer = null;
   let pendingResume = false; // autoplay 被阻止时，等待用户首次交互后恢复
+  let _endedTriggered = false; // 防止 ended 重复触发
 
   /* ============ 性能优化：懒创建 Audio，但首次用户交互即预热 ============ */
   let _audio = null;
+
+  /* ============ 自动切歌：ended 事件 + timeupdate 备用检测 ============ */
+  function handleEnded() {
+    if (_endedTriggered) return;
+    _endedTriggered = true;
+    // setTimeout 0 让 ended 状态清理完，避免下一首 play() 被竞态拒绝
+    setTimeout(() => {
+      if (playMode === 'one') {
+        load(current, true, false);
+      } else if (playMode === 'random') {
+        let nextIdx = current;
+        if (MUSIC.length > 1) {
+          while (nextIdx === current) nextIdx = Math.floor(Math.random() * MUSIC.length);
+        }
+        load(nextIdx, true, true);
+      } else {
+        load(current + 1, true, true);
+      }
+    }, 0);
+  }
 
   function ensureAudio() {
     if (_audio) return _audio;
     _audio = new Audio();
     _audio.preload = 'auto';
-    _audio.addEventListener('ended', () => {
-      // 修复：用 setTimeout 0 让 ended 事件清理完，避免下一首 play() 被竞态拒绝
-      setTimeout(() => {
-        if (playMode === 'one') {
-          load(current, true, false);
-        } else if (playMode === 'random') {
-          let nextIdx = current;
-          if (MUSIC.length > 1) {
-            while (nextIdx === current) nextIdx = Math.floor(Math.random() * MUSIC.length);
-          }
-          load(nextIdx, true, true);
-        } else {
-          load(current + 1, true, true);
-        }
-      }, 0);
-    });
+    _audio.addEventListener('ended', handleEnded);
     _audio.addEventListener('play', () => {
-      // 浏器真正开始播放时同步 UI（覆盖各种来源的 play 状态）
+      _endedTriggered = false; // 开始播放时重置标志
       playing = true;
       pendingResume = false;
       $('music-play').textContent = '❚❚';
@@ -54,6 +60,10 @@
       if (now - lastSave > 1000) {
         lastSave = now;
         save();
+      }
+      // 备用：某些浏览器/音频格式 ended 事件不触发，用 timeupdate 检测播放结束
+      if (_audio.duration > 0 && _audio.currentTime >= _audio.duration - 0.3) {
+        handleEnded();
       }
     });
     _audio.addEventListener('loadedmetadata', save);
@@ -226,9 +236,22 @@
     current = (index + MUSIC.length) % MUSIC.length;
     const a = ensureAudio();
     a.src = absSrc(currentItem().src);
+    _endedTriggered = false; // 切歌时重置
     updateName();
     renderList();
-    if (autoplay) play();
+    if (autoplay) {
+      // 修复：等 canplay 事件再 play，避免 src 刚切换时 AbortError
+      if (a.readyState >= 2) {
+        play();
+      } else {
+        const onReady = () => {
+          a.removeEventListener('canplay', onReady);
+          play();
+        };
+        a.addEventListener('canplay', onReady, { once: true });
+        a.load(); // 强制重新加载新 src
+      }
+    }
     if (doPeek) peek();
     save();
   }
@@ -452,32 +475,38 @@
     if (document.visibilityState === 'hidden') save();
   });
 
-  /* 初始化：带 sessionStorage 缓存的 music.json，避免每次跳页都发请求 */
-  (async function init() {
+  /* 初始化：先同步显示缓存，再异步 fetch 更新，避免卡在"加载中" */
+  // 同步阶段：立即渲染缓存数据，不等待 fetch
+  try {
+    const cached = sessionStorage.getItem(MUSIC_CACHE_KEY);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (parsed && Array.isArray(parsed.data)) {
+        MUSIC = parsed.data;
+      }
+    }
+  } catch (e) {}
+  renderList();
+  updateName();
+  initMusicSearch();
+
+  // 异步阶段：fetch 最新数据，更新列表
+  (async function initAsync() {
     try {
-      const cached = sessionStorage.getItem(MUSIC_CACHE_KEY);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed && Array.isArray(parsed.data) && Date.now() - parsed.ts < MUSIC_CACHE_TTL) {
-          MUSIC = parsed.data;
+      const res = await fetch('data/music.json?t=' + Date.now());
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          MUSIC = data;
+          sessionStorage.setItem(MUSIC_CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
+          renderList();
+          updateName();
         }
       }
-      if (!MUSIC.length) {
-        const res = await fetch('data/music.json?t=' + Date.now());
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            MUSIC = data;
-            sessionStorage.setItem(MUSIC_CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
-          }
-        }
-      }
-    } catch (e) {}
-    renderList();
-    updateName();
-    initMusicSearch();
+    } catch (e) {
+      console.warn('[player] 加载 music.json 失败:', e);
+    }
     if (MUSIC.length) {
-      // 立即恢复状态：设置 src + currentTime，并尝试续播
       restore();
     }
   })();

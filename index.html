@@ -75,8 +75,8 @@
       10% { opacity: 1; }
       100% { opacity: 0; transform: translate(-600px, 800px) rotate(35deg) scale(1); }
     }
-    /* 让正文/导航等浮在流星之上 */
-    .site-header, .shell-frame, .site-footer, .music-drawer { position: relative; z-index: 1; }
+    /* 让正文/导航等浮在流星之上，music-drawer 保持自身 fixed 定位与 z-index */
+    .site-header, .shell-frame, .site-footer { position: relative; z-index: 1; }
   </style>
 </head>
 <body>
@@ -102,7 +102,7 @@
   </footer>
 
   <script src="assets/js/config.js?v=3"></script>
-  <script src="assets/js/player.js?v=10"></script>
+  <script src="assets/js/player.js?v=11"></script>
   <script>
     (function () {
       const frame = document.getElementById('content-frame');
