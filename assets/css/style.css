@@ -79,9 +79,10 @@ nav a:hover, nav a.active { color: var(--text); }
 html.is-framed .site-header,
 html.is-framed .site-footer,
 html.is-framed #music-drawer { display: none !important; }
-html.is-framed, html.is-framed body { height: auto; min-height: 0; overflow: hidden; }
+/* is-framed：html/body 可滚动，让 iframe 内部内容能滚 */
+html.is-framed, html.is-framed body { height: auto; min-height: 0; overflow: auto; }
 html.is-framed body { padding-top: 0; display: block; }
-html.is-framed main.container { overflow-y: auto; max-height: none; height: auto; }
+html.is-framed main.container { overflow: visible; max-height: none; height: auto; }
 html.is-framed .hero { padding-top: 32px; }
 
 .hero { padding: 72px 0 48px; text-align: center; }

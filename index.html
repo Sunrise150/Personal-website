@@ -9,7 +9,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css?v=4">
   <style>
-    /* shell 专属：iframe 高度自适应内容，外层 body 滚动 */
     html, body { margin: 0; }
     body { display: flex; flex-direction: column; min-height: 100vh; }
     .shell-frame {
@@ -18,12 +17,9 @@
       margin: 0 auto;
       border: 0;
       display: block;
-      /* 高度由 JS 根据内容自适应，但不会超过视口高度减去 header/footer */
-      overflow: auto;
+      min-height: calc(100vh - 180px);
     }
-    /* shell 自身的 site-header 与子页面共用样式，无需改动 */
 
-    /* 内置刷新按钮 */
     .shell-refresh {
       background: transparent;
       border: 1px solid rgba(255,255,255,0.25);
@@ -43,9 +39,33 @@
     .shell-refresh:hover { background: rgba(255,255,255,0.12); }
     .shell-refresh.spinning { transform: rotate(360deg); }
 
+    /* ============ 标题下方版权副标题 ============ */
+    .site-title.with-subtitle {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      line-height: 1.15;
+    }
+    .site-title.with-subtitle::after {
+      content: attr(data-subtitle);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+      font-size: 10.5px;
+      font-weight: 400;
+      color: #78716c;
+      letter-spacing: 0;
+      margin-top: 2px;
+      text-transform: none;
+      white-space: nowrap;
+    }
+    @media (prefers-color-scheme: dark) {
+      .site-title.with-subtitle::after { color: #a8a29e; }
+    }
+    /* 小屏幕上隐藏副标题，避免 header 挤压 */
+    @media (max-width: 768px) {
+      .site-title.with-subtitle::after { display: none; }
+    }
+
     /* ============ 背景流星动画 ============ */
-    /* 修复：z-index 从 0 提升到 2，让流星浮在 header/iframe/footer 之上。
-       因为流星层有 pointer-events: none，不会拦截任何点击，交互完全不受影响。 */
     .meteor-layer {
       position: fixed;
       inset: 0;
@@ -79,13 +99,26 @@
       8% { opacity: 1; }
       100% { opacity: 0; transform: translate(-700px, 1000px) rotate(35deg) scale(1); }
     }
-    /* header / iframe / footer 保持 z-index: 1，低于流星层 */
     .site-header, .shell-frame, .site-footer { position: relative; z-index: 1; }
-    /* iframe 容器需有背景色，否则会显得和 body 之间有缝隙 */
     .shell-frame { background: #fafaf9; }
     body { background: #fafaf9; }
+
+    .site-footer {
+      margin-top: 0;
+      border-top: 1px solid #e7e5e4;
+      padding: 32px 0;
+      background: #fafaf9;
+    }
+    .site-footer p {
+      text-align: center;
+      color: #78716c;
+      font-size: 13px;
+      margin: 0;
+    }
     @media (prefers-color-scheme: dark) {
-      .shell-frame, body { background: #0c0a09; }
+      .shell-frame, body, .site-footer { background: #0c0a09; }
+      .site-footer { border-top-color: #292524; }
+      .site-footer p { color: #a8a29e; }
     }
   </style>
 </head>
@@ -114,21 +147,26 @@
   <script src="assets/js/config.js?v=3"></script>
   <script src="assets/js/player.js?v=11"></script>
   <script>
-    // 同步 shell 自身的标题和 footer（与子页面 config.js 内容一致）
     (function applyShellConfig() {
       const t = document.getElementById('site-title');
       const f = document.getElementById('footer-text');
       if (t && window.SITE_CONFIG) t.textContent = SITE_CONFIG.title;
       if (f && window.SITE_CONFIG) f.textContent = SITE_CONFIG.footer;
+
+      // 关键：给外层 shell 的标题加副标题（显示版权信息）
+      // 只有外层 shell 会执行到这里；iframe 内的子页面由自己的脚本处理，
+      // 不会走这段逻辑，所以子页面的 "日出的blog" 下面不会多出这行小字。
+      if (t && window.SITE_CONFIG) {
+        t.dataset.subtitle = SITE_CONFIG.footer;
+        t.classList.add('with-subtitle');
+      }
     })();
   </script>
   <script>
     (function () {
       const frame = document.getElementById('content-frame');
       const nav = document.getElementById('shell-nav');
-      const baseLen = (SITE_CONFIG.base || '/').length;
 
-      // 取当前路径去掉 base 前缀（如 /Personal-website/home.html → home.html）
       function stripBase(p) {
         if (!p) return '';
         if (p.charAt(0) !== '/' && p.indexOf('//') === -1) return p;
@@ -138,7 +176,6 @@
         return s;
       }
 
-      // 当前应该显示的子页面路径
       function getCurrentPath() {
         if (location.hash && location.hash.length > 2) {
           return location.hash.slice(1);
@@ -154,17 +191,34 @@
         frame.src = p;
       }
 
-      // 修复：给 iframe 高度加一个上限，避免内容过长时把 footer 推到视口外
-      // 这样 header 和 footer 始终可见，iframe 内部滚动（如果需要）
       function adjustFrameHeight() {
         try {
           const doc = frame.contentDocument;
           if (!doc) return;
-          const h = Math.max(doc.body.scrollHeight, doc.documentElement.scrollHeight);
+          const h = Math.max(
+            doc.body.scrollHeight,
+            doc.documentElement.scrollHeight,
+            doc.body.offsetHeight,
+            doc.documentElement.offsetHeight
+          );
           if (h > 0) {
-            const maxH = window.innerHeight - 180; // header 64 + footer 80 + 缓冲
-            frame.style.height = Math.min(h, Math.max(maxH, 200)) + 'px';
+            frame.style.height = h + 'px';
           }
+        } catch (e) {}
+      }
+
+      function injectIframeStyles() {
+        try {
+          const doc = frame.contentDocument;
+          if (!doc || doc._shellStylesInjected) return;
+          doc._shellStylesInjected = true;
+
+          const style = doc.createElement('style');
+          style.textContent = `
+            .site-footer { display: none !important; }
+            body { min-height: 0 !important; }
+          `;
+          doc.head.appendChild(style);
         } catch (e) {}
       }
 
@@ -174,31 +228,31 @@
           iframePath = frame.contentWindow.location.pathname +
             frame.contentWindow.location.search;
         } catch (e) {
-          return; // 跨域，忽略
+          return;
         }
         const sub = stripBase(iframePath);
         if (!sub) return;
 
-        // 用 hash 记录当前子页路径，便于分享/刷新
         const targetHash = '#' + sub;
         if (location.hash !== targetHash) {
           history.pushState({ path: sub }, '', '#' + sub);
         }
 
-        // 高亮当前导航项
         nav.querySelectorAll('a').forEach(a => {
           a.classList.toggle('active', a.getAttribute('data-path') === sub);
         });
 
-        // 同步外层 title
         try {
           document.title = frame.contentDocument.title || '日出的blog';
         } catch (e) {}
 
-        // 调整 iframe 高度
-        adjustFrameHeight();
+        injectIframeStyles();
 
-        // 监听 iframe 内 DOM 变化，重新调整高度
+        requestAnimationFrame(() => {
+          adjustFrameHeight();
+          setTimeout(adjustFrameHeight, 300);
+        });
+
         try {
           const docEl = frame.contentDocument;
           if (docEl && !frame._obs) {
@@ -208,9 +262,6 @@
           }
         } catch (e) {}
 
-        // 修复：iframe 内点击事件不会冒泡到外层 shell
-        // 当抽屉展开时，用户在 iframe 内点击应让抽屉收回
-        // 同时拦截 index.html 链接，避免在 iframe 内嵌套 shell
         try {
           const iframeDoc = frame.contentDocument;
           if (iframeDoc && !iframeDoc._shellClickBound) {
@@ -227,10 +278,8 @@
         } catch (e) {}
       });
 
-      // 窗口 resize 时重新计算 iframe 最大高度
       window.addEventListener('resize', adjustFrameHeight);
 
-      // 导航链接点击：让 iframe 加载新页（不整页跳转）
       nav.addEventListener('click', (e) => {
         const a = e.target.closest('a[data-path]');
         if (!a) return;
@@ -239,7 +288,6 @@
         frame.src = path;
       });
 
-      // 浏览器后退/前进：同步 iframe
       window.addEventListener('popstate', (e) => {
         const p = getCurrentPath();
         if (frame.src.indexOf(p) === -1) {
@@ -247,7 +295,6 @@
         }
       });
 
-      // 内置刷新按钮：仅重载 iframe 内容，不影响外层 shell 与音乐播放
       const refreshBtn = document.getElementById('shell-refresh');
       refreshBtn.addEventListener('click', () => {
         refreshBtn.classList.add('spinning');
@@ -260,7 +307,7 @@
       initFrame();
     })();
 
-    /* ============ 背景流星：偶尔出现，不影响阅读 ============ */
+    /* 背景流星 */
     (function () {
       const layer = document.getElementById('meteor-layer');
       if (!layer) return;
