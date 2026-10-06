@@ -241,16 +241,24 @@
     renderList();
     if (autoplay) {
       // 修复：等 canplay 事件再 play，避免 src 刚切换时 AbortError
-      if (a.readyState >= 2) {
+      // 加 timeout 兜底：canplay 可能因缓存已存在而不触发
+      let played = false;
+      const onReady = () => {
+        if (played) return;
+        played = true;
+        a.removeEventListener('canplay', onReady);
         play();
-      } else {
-        const onReady = () => {
+      };
+      a.addEventListener('canplay', onReady, { once: true });
+      a.load(); // 强制重新加载新 src
+      // 兜底：1.5 秒后若 canplay 未触发，强制尝试 play
+      setTimeout(() => {
+        if (!played) {
+          played = true;
           a.removeEventListener('canplay', onReady);
           play();
-        };
-        a.addEventListener('canplay', onReady, { once: true });
-        a.load(); // 强制重新加载新 src
-      }
+        }
+      }, 1500);
     }
     if (doPeek) peek();
     save();
