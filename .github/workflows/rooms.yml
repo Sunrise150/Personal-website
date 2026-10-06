@@ -1,8 +1,6 @@
 name: Fetch Rooms Status
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 env:
