@@ -49,6 +49,9 @@
     _audio.addEventListener('ended', handleEnded);
     _audio.addEventListener('play', () => {
       _endedTriggered = false; // 开始播放时重置标志
+      // 关键修复：Promise 被拒绝时 play 事件仍可能触发，
+      // 此时 _audio.paused 会是 true（或处于非播放状态），不能盲目标记为 playing
+      if (_audio.paused) return;
       playing = true;
       pendingResume = false;
       $('music-play').textContent = '❚❚';
@@ -106,7 +109,6 @@
   const drawer = $('music-drawer');
 
   /* ============ 预热：用户首次任意交互即创建 Audio 并预载 src ============ */
-  // 解决问题1：响应缓慢。这样真正点播放时 Audio 已 ready，几乎瞬时响应
   function warmup() {
     if (_audio) return;
     const item = currentItem();
@@ -115,9 +117,7 @@
     if (!a.src) a.src = absSrc(item.src);
   }
 
-  /* ============ 修复：autoplay 被阻止后的恢复机制 ============ */
-  // 用冒泡阶段监听，避免捕获阶段提前触发导致用户激活丢失
-  // 跳过 music-play 按钮和抽屉内的点击，让按钮自己的 handler 处理 play/pause
+  /* ============ autoplay 被阻止后的恢复机制 ============ */
   function onDocClick(e) {
     if (!pendingResume) return;
     const t = e.target;
@@ -134,18 +134,10 @@
     drawer.classList.add('is-' + m);
   }
 
-  /* ============ absSrc：始终用相对路径，避免 base 配置和环境判断的坑 ============ */
-  // 之前用 base 拼接 + isLocal 判断，结果在 GitHub Pages 上 base 没正确加载
-  // 导致 src='/Personal-website/assets/...' 没拼上，变成 '/assets/...' → 404
-  // 现在始终用相对路径，让浏览器基于当前页面 URL 解析：
-  // - 本地: http://localhost:8765/music.html + assets/music/x.mp3 → http://localhost:8765/assets/music/x.mp3 ✓
-  // - GitHub 项目 Pages: https://sunrise150.github.io/Personal-website/music.html + assets/music/x.mp3 → https://sunrise150.github.io/Personal-website/assets/music/x.mp3 ✓
-  // 前提：所有 HTML 页面都在仓库根目录（没有子目录），符合本站结构
+  /* ============ absSrc：相对路径 ============ */
   function absSrc(src) {
     if (!src) return '';
-    if (/^https?:\/\//.test(src)) return src; // 完整 URL，直接用
-    // 用相对路径，让浏览器基于当前页面 URL 解析
-    // encodeURI 编码中文文件名
+    if (/^https?:\/\//.test(src)) return src;
     return encodeURI(src);
   }
 
@@ -164,7 +156,9 @@
     $('music-sub').textContent = item.artist
       ? item.artist
       : `${current + 1} / ${MUSIC.length}`;
-    document.title = playing
+    // 修复：用实际 audio 状态判断
+    const actuallyPlaying = _audio && !_audio.paused;
+    document.title = actuallyPlaying
       ? `♪ ${item.name} · ${SITE_CONFIG.title}`
       : SITE_CONFIG.title;
   }
@@ -180,7 +174,7 @@
 
   function filterMusic(q) {
     MUSIC_QUERY = q.trim().toLowerCase();
-    if (!MUSIC_QUERY) return MUSIC;
+    if (!MUSIC_QUERY) return MUSIC.map((m, i) => ({ m, i }));
     return MUSIC.map((m, i) => ({ m, i })).filter(({ m }) => {
       const name = (m.name || '').toLowerCase();
       const artist = (m.artist || '').toLowerCase();
@@ -241,7 +235,6 @@
     renderList();
     if (autoplay) {
       // 修复：等 canplay 事件再 play，避免 src 刚切换时 AbortError
-      // 加 timeout 兜底：canplay 可能因缓存已存在而不触发
       let played = false;
       const onReady = () => {
         if (played) return;
@@ -250,7 +243,7 @@
         play();
       };
       a.addEventListener('canplay', onReady, { once: true });
-      a.load(); // 强制重新加载新 src
+      a.load();
       // 兜底：1.5 秒后若 canplay 未触发，强制尝试 play
       setTimeout(() => {
         if (!played) {
@@ -264,7 +257,7 @@
     save();
   }
 
-  /* ============ 修复问题1：play() 正确处理 Promise，重试 AbortError ============ */
+  /* ============ 修复：play() 正确同步状态，重试 AbortError ============ */
   function play() {
     if (!MUSIC.length) {
       setMode('expanded');
@@ -273,8 +266,6 @@
     const a = ensureAudio();
     if (!a.src) a.src = absSrc(currentItem().src);
 
-    // 重试机制：src 刚切换时 play() 可能被 AbortError 拒绝
-    // 等一小段时间后重试，最多 8 次
     let retries = 0;
     function tryPlay() {
       const p = a.play();
@@ -290,7 +281,12 @@
             '| readyState:', a.readyState,
             '| networkState:', a.networkState,
             '| retries:', retries);
-          // 自动切歌时 src 刚切换，AbortError 是正常的，重试
+
+          // 关键修复：立即把 playing 和按钮图标同步到“暂停”状态，
+          // 否则重试期间 UI 显示为“暂停”图标但实际没在播，用户点一次会误走 pause()
+          playing = false;
+          $('music-play').textContent = '▶';
+
           if (errName === 'AbortError' && retries < 8) {
             retries++;
             setTimeout(tryPlay, 250);
@@ -298,14 +294,10 @@
           }
           if (errName === 'NotAllowedError' || errName === 'AbortError') {
             pendingResume = true;
-            playing = false;
-            $('music-play').textContent = '▶';
             const sub = $('music-sub');
             if (sub) sub.textContent = '点击页面任意位置恢复播放';
           } else {
             pendingResume = false;
-            playing = false;
-            $('music-play').textContent = '▶';
             const sub = $('music-sub');
             const msg = (err && err.message) || errName || '未知错误';
             if (sub) sub.textContent = '无法播放：' + msg;
@@ -341,7 +333,7 @@
     }, 3500);
   }
 
-  /* ============ 修复问题2：localStorage 跨页保持状态 ============ */
+  /* ============ 跨页状态保存 ============ */
   function save() {
     try {
       const a = _audio;
@@ -356,12 +348,11 @@
     } catch (e) {}
   }
 
-  /* ============ 修复问题2：跨页恢复 - 立即设置 src + currentTime ============ */
+  /* ============ 跨页恢复 ============ */
   function restore() {
     try {
       const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
       if (!s || !MUSIC.length) return;
-      // 恢复播放模式
       if (s.playMode && ['order', 'random', 'one'].includes(s.playMode)) {
         playMode = s.playMode;
         updateModeBtn();
@@ -371,11 +362,9 @@
         const item = currentItem();
         if (!item) return;
 
-        // 立即创建 audio 并设置 src，让浏览器并行预载
         const a = ensureAudio();
         a.src = absSrc(item.src);
 
-        // 恢复播放进度（loadedmetadata 后才能设 currentTime）
         if (typeof s.time === 'number' && s.time > 0) {
           const apply = () => { try { a.currentTime = s.time; } catch (e) {} };
           if (a.readyState >= 1) apply();
@@ -385,10 +374,7 @@
         updateName();
         renderList();
 
-        // 关键：不在此处调用 a.play()！
-        // 页面加载时无用户手势，a.play() 必然被 reject，且会让 _audio 元素
-        // 进入 interrupted 状态，导致后续用户点击时的 a.play() 也失败。
-        // 改为只设置 pendingResume 标志，等用户首次点击触发 play()。
+        // 不自动调 play()，等用户首次点击
         if (s.playing || s.pendingResume) {
           pendingResume = true;
           playing = false;
@@ -400,7 +386,7 @@
     } catch (e) {}
   }
 
-  /* ============ 播放模式切换 ============ */
+  /* ============ 播放模式 ============ */
   function updateModeBtn() {
     const btn = $('music-mode');
     if (!btn) return;
@@ -437,54 +423,47 @@
 
   $('music-collapse').addEventListener('click', () => setMode('collapsed'));
 
+  /* ============ 修复：用实际 audio.paused 判断，避免 playing 变量不同步 ============ */
   $('music-play').addEventListener('click', () => {
-    if (playing) pause(); else play();
+    const a = ensureAudio();
+    if (a.paused) play();
+    else pause();
   });
 
-  $('music-prev').addEventListener('click', () => load(current - 1, playing, true));
-  $('music-next').addEventListener('click', () => load(current + 1, playing, true));
+  $('music-prev').addEventListener('click', () => load(current - 1, true, true));
+  $('music-next').addEventListener('click', () => load(current + 1, true, true));
   $('music-mode').addEventListener('click', togglePlayMode);
 
-  /* ============ 修复：接收 music-manage.js 派发的最新列表 ============ */
-  // 音乐管理页通过 GitHub API 拿到的列表比本地 data/music.json 新（Actions 还没跑）
-  // 接收后更新抽屉列表，否则抽屉显示空列表导致播放无声音
+  /* 接收 music-manage.js 派发的最新列表 */
   window.addEventListener('blog:music-list', (e) => {
     const list = e && e.detail;
     if (!Array.isArray(list)) return;
     MUSIC = list;
-    // 同步缓存
     try {
       sessionStorage.setItem(MUSIC_CACHE_KEY, JSON.stringify({ data: list, ts: Date.now() }));
     } catch (e2) {}
-    // 当前索引若超出范围则归零
     if (current >= MUSIC.length) current = 0;
     renderList();
     updateName();
-    // 若未播放且未预热 audio，列表更新后无需额外动作；
-    // 若正在播放或待恢复，让 src 保持，下次切歌会用到新列表
   });
 
-  /* ============ 修复：点击抽屉外部关闭抽屉 ============ */
-  // 抽屉展开时，点击正文区域自动收起
+  /* 点击抽屉外部关闭 */
   document.addEventListener('click', (e) => {
     if (mode !== 'expanded' && mode !== 'peek') return;
     if (e.target && e.target.closest && e.target.closest('#music-drawer')) return;
     setMode('collapsed');
   });
 
-  // 暴露全局函数，供 shell 在 iframe 内点击时调用（跨 iframe 边界）
   window.__blogPlayer = { collapse: () => setMode('collapsed') };
 
-  /* ============ 修复问题2：可靠的状态保存事件 ============ */
-  // pagehide 比 beforeunload 更可靠（移动端、bfcache 等场景）
+  /* 状态保存事件 */
   window.addEventListener('pagehide', save);
   window.addEventListener('beforeunload', save);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') save();
   });
 
-  /* 初始化：先同步显示缓存，再异步 fetch 更新，避免卡在"加载中" */
-  // 同步阶段：立即渲染缓存数据，不等待 fetch
+  /* 初始化 */
   try {
     const cached = sessionStorage.getItem(MUSIC_CACHE_KEY);
     if (cached) {
@@ -498,7 +477,6 @@
   updateName();
   initMusicSearch();
 
-  // 异步阶段：fetch 最新数据，更新列表
   (async function initAsync() {
     try {
       const res = await fetch('data/music.json?t=' + Date.now());
