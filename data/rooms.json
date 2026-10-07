@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-10-07T19:51:04.952558+00:00",
+  "updatedAt": "2026-10-07T19:55:59.792790+00:00",
   "totalRooms": 8,
-  "activeRooms": 7,
+  "activeRooms": 8,
   "totalPlayers": 6,
   "rooms": [
     {
@@ -35,9 +35,9 @@
     {
       "ip": "94.103.3.82",
       "port": 10800,
-      "name": "无法获取",
+      "name": "Prigranichnoe | Ru",
       "online": 0,
-      "capacity": 0
+      "capacity": 24
     },
     {
       "ip": "43.136.23.115",
