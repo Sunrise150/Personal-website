@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-07T05:46:36.902359+00:00",
+  "updatedAt": "2026-10-07T05:50:59.250878+00:00",
   "totalRooms": 8,
   "activeRooms": 8,
   "totalPlayers": 41,
@@ -43,7 +43,7 @@
       "ip": "43.136.23.115",
       "port": 6005,
       "name": "[CN 2]/report举报各种问题",
-      "online": 4,
+      "online": 3,
       "capacity": 70
     },
     {
@@ -57,7 +57,7 @@
       "ip": "43.136.23.115",
       "port": 6002,
       "name": "[CN 1] WIKI.514.LIVE",
-      "online": 37,
+      "online": 38,
       "capacity": 70
     }
   ]
