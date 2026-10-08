@@ -27,6 +27,15 @@
     "excerpt": "无"
   },
   {
+    "slug": "2026-10-08-github-action-sef78",
+    "title": "大晚上闲的没事干，分享一下关于github action定时触发问题",
+    "date": "2026-10-08",
+    "tags": [
+      "不懂喵"
+    ],
+    "excerpt": "关于如何定时触发github当中的workflow的action定时问题"
+  },
+  {
     "slug": "2026-10-08-issue-rec0v",
     "title": "如果有任何想听的歌曲可以提issue，或者你认识我的话直接找我就行",
     "date": "2026-10-08",
