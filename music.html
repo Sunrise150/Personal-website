@@ -9,7 +9,7 @@
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap"></noscript>
-  <link rel="stylesheet" href="assets/css/style.css?v=5">
+  <link rel="stylesheet" href="assets/css/style.css?v=6">
   <script>if (window.top !== window.self) document.documentElement.classList.add('is-framed');</script>
 </head>
 <body>
@@ -64,6 +64,10 @@
     </form>
 
     <h2 class="page-title" style="font-size:22px;margin-top:32px;">音乐列表</h2>
+    <div class="manage-toolbar">
+      <input type="text" id="music-search" class="manage-search" placeholder="搜索歌名、艺术家…" autocomplete="off">
+      <span id="music-count" class="manage-count"></span>
+    </div>
     <div id="music-admin-list" class="manage-list">
       <div class="loading">加载中…</div>
     </div>
@@ -74,7 +78,7 @@
   </footer>
 
   <script src="assets/js/config.js?v=3" defer></script>
-  <script src="assets/js/music-manage.js?v=2" defer></script>
+  <script src="assets/js/music-manage.js?v=3" defer></script>
   <script src="assets/js/player.js?v=13" defer></script>
 </body>
 </html>

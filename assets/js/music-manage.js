@@ -149,6 +149,7 @@ function escapeHtml(str) {
 }
 
 /* ============ 性能优化：DocumentFragment + 事件委托 ============ */
+let ALL_MUSIC = []; // 完整列表（供搜索过滤后还原索引）
 function renderList(list) {
   const wrap = document.getElementById('music-admin-list');
   if (!wrap) return;
@@ -157,19 +158,21 @@ function renderList(list) {
     return;
   }
   const frag = document.createDocumentFragment();
-  list.forEach((m, i) => {
+  list.forEach((m) => {
+    // 用在 ALL_MUSIC 中的原索引作为 data-i，确保编辑/删除能找到正确条目
+    const realIdx = ALL_MUSIC.indexOf(m);
     const item = document.createElement('div');
     item.className = 'music-admin-item';
-    item.dataset.i = String(i);
+    item.dataset.i = String(realIdx);
     item.innerHTML = `
       <div class="music-admin-info">
         <div class="music-admin-name">${escapeHtml(m.name || '未知曲目')}</div>
         <div class="music-admin-meta">${escapeHtml(m.artist || '未填写艺术家')} · ${escapeHtml(m.src || '')}</div>
       </div>
       <div class="music-admin-actions">
-        <button class="mini-btn" data-act="edit" data-i="${i}">编辑</button>
-        <button class="mini-btn" data-act="play" data-i="${i}">试听</button>
-        <button class="mini-btn danger" data-act="del" data-i="${i}">删除</button>
+        <button class="mini-btn" data-act="edit" data-i="${realIdx}">编辑</button>
+        <button class="mini-btn" data-act="play" data-i="${realIdx}">试听</button>
+        <button class="mini-btn danger" data-act="del" data-i="${realIdx}">删除</button>
       </div>
     `;
     frag.appendChild(item);
@@ -177,12 +180,43 @@ function renderList(list) {
   wrap.replaceChildren(frag);
 }
 
+/* ============ 搜索过滤 ============ */
+function applyFilter() {
+  const q = (document.getElementById('music-search')?.value || '').trim().toLowerCase();
+  let filtered = ALL_MUSIC;
+  if (q) {
+    filtered = ALL_MUSIC.filter(m => {
+      const name = (m.name || '').toLowerCase();
+      const artist = (m.artist || '').toLowerCase();
+      return name.includes(q) || artist.includes(q);
+    });
+  }
+  renderList(filtered);
+  const cnt = document.getElementById('music-count');
+  if (cnt) {
+    const total = ALL_MUSIC.length;
+    const shown = filtered.length;
+    cnt.textContent = q ? `${shown} / ${total} 首` : `${total} 首`;
+  }
+}
+
+function initSearch() {
+  const input = document.getElementById('music-search');
+  if (!input) return;
+  let timer = null;
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(applyFilter, 150);
+  });
+}
+
 async function render(force = false) {
   const wrap = document.getElementById('music-admin-list');
   if (!wrap) return;
   try {
     const { list } = await loadMusicList(force);
-    renderList(list);
+    ALL_MUSIC = list;
+    applyFilter();
   } catch (e) {
     wrap.innerHTML = `<p class="empty">加载失败：${e.message}</p>`;
   }
@@ -342,6 +376,7 @@ document.getElementById('music-form').addEventListener('submit', async (e) => {
 });
 
 applyConfig();
+initSearch();
 render();
 
 // 刷新按钮：强制重新拉取列表
