@@ -1,28 +1,28 @@
 {
-  "updatedAt": "2026-10-08T03:51:00.825314+00:00",
+  "updatedAt": "2026-10-08T03:56:03.094966+00:00",
   "totalRooms": 8,
-  "activeRooms": 7,
-  "totalPlayers": 18,
+  "activeRooms": 8,
+  "totalPlayers": 15,
   "rooms": [
     {
       "ip": "51.91.101.151",
       "port": 10802,
       "name": "Clan War Lobby",
-      "online": 1,
+      "online": 0,
       "capacity": 48
     },
     {
       "ip": "51.91.101.151",
       "port": 10801,
       "name": "SokuLobbies Public Tag Lobby",
-      "online": 1,
+      "online": 0,
       "capacity": 32
     },
     {
       "ip": "51.91.101.151",
       "port": 10800,
-      "name": "SokuLobbies Public Vanilla Lobby \u0007",
-      "online": 7,
+      "name": "SokuLobbies Public Vanilla Lobby \u0006",
+      "online": 6,
       "capacity": 32
     },
     {
@@ -35,9 +35,9 @@
     {
       "ip": "94.103.3.82",
       "port": 10800,
-      "name": "无法获取",
+      "name": "Prigranichnoe | Ru",
       "online": 0,
-      "capacity": 0
+      "capacity": 24
     },
     {
       "ip": "43.136.23.115",
