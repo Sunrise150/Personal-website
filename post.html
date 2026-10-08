@@ -20,6 +20,7 @@
         <a href="manage.html">管理</a>
         <a href="music.html">音乐</a>
         <a href="rooms.html">房间人数查看</a>
+        <a href="games.html">游戏</a>
       </nav>
     </div>
   </header>
@@ -32,15 +33,67 @@
       <div id="post-content" class="post-content"></div>
       <div id="post-nav"></div>
     </article>
+
+    <!-- 评论区 -->
+    <section id="comments-section" class="comments-section" style="display:none;">
+      <h2 class="comments-title">评论</h2>
+      <div id="comments-list" class="comments-list">
+        <div class="comments-empty">暂无评论，来抢沙发吧</div>
+      </div>
+
+      <!-- 评论输入 -->
+      <div class="comment-form-block">
+        <h3 class="comment-form-title" id="comment-form-title">发表评论</h3>
+        <div class="comment-form-row">
+          <input type="text" id="comment-name" class="comment-input" placeholder="昵称（可选，默认匿名）" maxlength="30">
+        </div>
+        <div class="comment-form-row comment-textarea-wrap">
+          <textarea id="comment-body" class="comment-textarea" placeholder="说点什么吧…（支持 Markdown 简写）" rows="4"></textarea>
+          <button type="button" id="emoji-btn" class="emoji-btn" title="插入 emoji">😊</button>
+        </div>
+        <!-- emoji 面板 -->
+        <div id="emoji-panel" class="emoji-panel" hidden></div>
+        <div class="comment-form-row comment-tools">
+          <button type="button" id="comment-img-btn" class="comment-tool-btn" title="上传图片">📷 图片</button>
+          <button type="button" id="comment-file-btn" class="comment-tool-btn" title="上传压缩包等文件">📦 文件</button>
+          <input type="file" id="comment-img-input" accept="image/*" multiple hidden>
+          <input type="file" id="comment-file-input" hidden multiple>
+        </div>
+        <div id="comment-attachments" class="comment-attachments"></div>
+        <div class="comment-form-row comment-submit-row">
+          <span id="comment-status" class="comment-status"></span>
+          <button type="button" id="comment-submit" class="comment-submit">发表</button>
+        </div>
+        <div class="comment-settings-row">
+          <a href="javascript:void(0)" id="comment-settings-link">⚙️ 设置 GitHub 信息</a>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
     <div class="container"><p id="footer-text"></p></div>
   </footer>
 
+  <!-- 评论设置弹窗 -->
+  <div id="comment-settings-modal" class="comment-modal" hidden>
+    <div class="comment-modal-body">
+      <h3>GitHub 设置</h3>
+      <p class="comment-modal-hint">评论需通过 GitHub API 提交到仓库，请填写有写入权限的 Token。</p>
+      <label>Owner<input id="cmt-cfg-owner" type="text"></label>
+      <label>Repo<input id="cmt-cfg-repo" type="text"></label>
+      <label>Token<input id="cmt-cfg-token" type="password" placeholder="ghp_..."></label>
+      <div class="comment-modal-actions">
+        <button type="button" id="cmt-cfg-save">保存</button>
+        <button type="button" id="cmt-cfg-cancel">取消</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="assets/js/config.js?v=3"></script>
   <script src="assets/js/post.js"></script>
-  <script src="assets/js/player.js?v=11"></script>
+  <script src="assets/js/comments.js?v=1"></script>
+  <script src="assets/js/player.js?v=13"></script>
 </body>
 </html>

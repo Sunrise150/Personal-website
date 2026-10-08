@@ -109,6 +109,14 @@
       padding: 32px 0;
       background: #fafaf9;
     }
+    /* 标题下方 footer 副标题 */
+    .footer-subline {
+      margin: 2px 0 0;
+      font-size: 11px;
+      color: #a8a29e;
+      line-height: 1.4;
+      max-width: 220px;
+    }
     .site-footer p {
       text-align: center;
       color: #78716c;
@@ -119,6 +127,7 @@
       .shell-frame, body, .site-footer { background: #0c0a09; }
       .site-footer { border-top-color: #292524; }
       .site-footer p { color: #a8a29e; }
+      .footer-subline { color: #a8a29e; }
     }
   </style>
 </head>
@@ -127,12 +136,14 @@
   <header class="site-header">
     <div class="container header-inner">
       <a href="index.html" class="site-title" id="site-title">日出的blog</a>
+      <p class="footer-subline" id="footer-subline"></p>
       <nav id="shell-nav">
         <a href="home.html" class="active" data-path="home.html">文章</a>
         <a href="write.html" data-path="write.html">写文章</a>
         <a href="manage.html" data-path="manage.html">管理</a>
         <a href="music.html" data-path="music.html">音乐</a>
         <a href="rooms.html" data-path="rooms.html">房间人数查看</a>
+        <a href="games.html" data-path="games.html">游戏</a>
         <button id="shell-refresh" class="shell-refresh" type="button" title="刷新当前页（不影响音乐）" aria-label="刷新">↻</button>
       </nav>
     </div>
@@ -145,21 +156,14 @@
   </footer>
 
   <script src="assets/js/config.js?v=3"></script>
-  <script src="assets/js/player.js?v=11"></script>
+  <script src="assets/js/player.js?v=13"></script>
   <script>
     (function applyShellConfig() {
       const t = document.getElementById('site-title');
-      const f = document.getElementById('footer-text');
+      const sub = document.getElementById('footer-subline');
       if (t && window.SITE_CONFIG) t.textContent = SITE_CONFIG.title;
-      if (f && window.SITE_CONFIG) f.textContent = SITE_CONFIG.footer;
-
-      // 关键：给外层 shell 的标题加副标题（显示版权信息）
-      // 只有外层 shell 会执行到这里；iframe 内的子页面由自己的脚本处理，
-      // 不会走这段逻辑，所以子页面的 "日出的blog" 下面不会多出这行小字。
-      if (t && window.SITE_CONFIG) {
-        t.dataset.subtitle = SITE_CONFIG.footer;
-        t.classList.add('with-subtitle');
-      }
+      // footer 文本放到标题下方的小字副标题，不再放底部 footer
+      if (sub && window.SITE_CONFIG) sub.textContent = SITE_CONFIG.footer;
     })();
   </script>
   <script>

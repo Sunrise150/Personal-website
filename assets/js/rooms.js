@@ -93,7 +93,7 @@ async function loadRooms() {
       <span class="rooms-stat">全服总人数：<strong>${total}</strong></span>
       <span class="rooms-stat rooms-stat-time">更新于 ${formatTime(data.updatedAt)}</span>
     `;
-    hint.textContent = '每 5 分钟自动更新一次';
+    hint.textContent = '每 5 分钟自动更新一次/如若超出 5 分钟未更新，请等待下一个5分钟刷新';
   } catch (e) {
     tbody.innerHTML = `<tr><td colspan="5" class="rooms-loading">加载失败：${escapeHtml(e.message)}</td></tr>`;
     summary.innerHTML = '<span class="rooms-stat">加载失败</span>';

@@ -326,6 +326,14 @@
 
   function peek() {
     if (mode === 'expanded') return;
+    // 游戏页面：不自动弹出抽屉，避免遮挡游戏画面
+    // 但音乐切歌、播放正常进行
+    // 通过 iframe contentWindow 读取当前子页面路径（shell 自身 location 永远是 index.html）
+    try {
+      const frame = document.getElementById('content-frame');
+      const subPath = frame && frame.contentWindow ? frame.contentWindow.location.pathname.toLowerCase() : '';
+      if (subPath.endsWith('/snake.html') || subPath.endsWith('/tetris.html')) return;
+    } catch (e) {}
     setMode('peek');
     clearTimeout(peekTimer);
     peekTimer = setTimeout(() => {

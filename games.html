@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>游戏 - 日出的blog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css?v=5">
+  <script>if (window.top !== window.self) document.documentElement.classList.add('is-framed');</script>
+  <style>
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin: 40px 0;
+    }
+    .game-card {
+      display: block;
+      padding: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      text-decoration: none;
+      color: inherit;
+      transition: transform .2s, border-color .2s, box-shadow .2s;
+    }
+    .game-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .game-card-icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+    }
+    .game-card-title {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .game-card-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="site-title" id="site-title"></a>
+      <nav>
+        <a href="index.html">文章</a>
+        <a href="write.html">写文章</a>
+        <a href="manage.html">管理</a>
+        <a href="music.html">音乐</a>
+        <a href="rooms.html">房间人数查看</a>
+        <a href="games.html">游戏</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <h1 style="font-family:'Noto Serif SC',serif;font-size:28px;font-weight:700;margin:32px 0 8px;">游戏</h1>
+    <p style="color:var(--text-muted);font-size:14px;margin-bottom:24px;">玩一玩，放松一下。</p>
+    <div class="games-grid">
+      <a class="game-card" href="snake.html">
+        <div class="game-card-icon">🐍</div>
+        <div class="game-card-title">贪吃蛇</div>
+        <div class="game-card-desc">经典贪吃蛇，可穿墙。方向键/WASD 控制，空格暂停。</div>
+      </a>
+      <a class="game-card" href="tetris.html">
+        <div class="game-card-icon">🧱</div>
+        <div class="game-card-title">俄罗斯方块</div>
+        <div class="game-card-desc">经典俄罗斯方块。←→移动，↑旋转，↓加速下落，空格直落。</div>
+      </a>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container"><p id="footer-text"></p></div>
+  </footer>
+
+  <script src="assets/js/config.js?v=3"></script>
+  <script>
+    document.getElementById('site-title').textContent = SITE_CONFIG.title;
+    document.getElementById('footer-text').textContent = SITE_CONFIG.footer;
+  </script>
+  <script src="assets/js/player.js?v=13"></script>
+</body>
+</html>

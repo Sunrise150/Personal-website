@@ -72,6 +72,11 @@ async function loadPost() {
 
     document.getElementById('loading').style.display = 'none';
     document.getElementById('post-wrap').style.display = 'block';
+    // 显示评论区
+    const cs = document.getElementById('comments-section');
+    if (cs) cs.style.display = 'block';
+    // 触发评论加载
+    document.dispatchEvent(new CustomEvent('post:loaded', { detail: { slug } }));
   } catch (e) {
     showError(e.message);
   }

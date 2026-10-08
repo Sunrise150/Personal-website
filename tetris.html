@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>俄罗斯方块 - 日出的blog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css?v=5">
+  <script>if (window.top !== window.self) document.documentElement.classList.add('is-framed');</script>
+  <style>
+    body { overscroll-behavior: contain; }
+    .tetris-wrap {
+      max-width: 640px;
+      margin: 24px auto;
+      padding: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      text-align: center;
+    }
+    .tetris-wrap h1 {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .tetris-hint {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+    .tetris-stats {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    .tetris-stats strong { color: var(--accent); }
+    .tetris-board-wrap {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    #tetris-canvas {
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      display: block;
+      max-width: 100%;
+      height: auto;
+      touch-action: none;
+    }
+    #tetris-next {
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      display: block;
+      touch-action: none;
+    }
+    .tetris-side {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+    .tetris-side-label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .tetris-controls {
+      margin-top: 16px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .tetris-btn {
+      padding: 8px 20px;
+      background: var(--accent);
+      color: #fff;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .tetris-btn.secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .tetris-gameover {
+      margin-top: 12px;
+      padding: 8px 16px;
+      background: #ef4444;
+      color: #fff;
+      border-radius: 8px;
+      font-weight: 700;
+      display: none;
+    }
+    .tetris-gameover.show { display: inline-block; }
+    /* 移动端按键 */
+    .tetris-dpad {
+      display: none;
+      margin: 16px auto 0;
+      grid-template-columns: repeat(3, 56px);
+      grid-template-rows: repeat(3, 56px);
+      gap: 6px;
+      justify-content: center;
+    }
+    .tetris-dpad button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 18px;
+      cursor: pointer;
+      color: var(--text);
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tetris-dpad button:active { background: var(--accent); color: #fff; }
+    .tetris-dpad .rot { grid-column: 2; grid-row: 1; }
+    .tetris-dpad .left { grid-column: 1; grid-row: 2; }
+    .tetris-dpad .down { grid-column: 2; grid-row: 2; }
+    .tetris-dpad .right { grid-column: 3; grid-row: 2; }
+    .tetris-dpad .drop { grid-column: 2; grid-row: 3; }
+    @media (max-width: 640px) {
+      .tetris-dpad { display: grid; }
+      /* 小屏：stats 横向滚动避免换行挤压 */
+      .tetris-stats { flex-wrap: wrap; gap: 12px; font-size: 13px; }
+      /* 预览框在窄屏适当缩小 */
+      #tetris-next { width: 90px; height: 90px; }
+    }
+    @media (max-width: 380px) {
+      /* 极窄屏：棋盘 + 预览竖向排列 */
+      .tetris-board-wrap { flex-direction: column-reverse; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="site-title" id="site-title"></a>
+      <nav>
+        <a href="index.html">文章</a>
+        <a href="write.html">写文章</a>
+        <a href="manage.html">管理</a>
+        <a href="music.html">音乐</a>
+        <a href="rooms.html">房间人数查看</a>
+        <a href="games.html">游戏</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="tetris-wrap">
+      <h1>俄罗斯方块</h1>
+      <p class="tetris-hint">←→移动，↑旋转，↓加速，空格直落。填满整行即可消除。</p>
+      <div class="tetris-stats">
+        <div>得分：<strong id="tetris-score">0</strong></div>
+        <div>行数：<strong id="tetris-lines">0</strong></div>
+        <div>级别：<strong id="tetris-level">1</strong></div>
+        <div>最高分：<strong id="tetris-best">0</strong></div>
+      </div>
+      <div class="tetris-board-wrap">
+        <canvas id="tetris-canvas" width="300" height="600"></canvas>
+        <div class="tetris-side">
+          <div class="tetris-side-label">下一个</div>
+          <canvas id="tetris-next" width="120" height="120"></canvas>
+        </div>
+      </div>
+      <div id="tetris-gameover" class="tetris-gameover">游戏结束！按「重新开始」再来一局</div>
+      <div class="tetris-controls">
+        <button id="tetris-start" class="tetris-btn">开始</button>
+        <button id="tetris-pause" class="tetris-btn secondary">暂停</button>
+        <button id="tetris-restart" class="tetris-btn secondary">重新开始</button>
+      </div>
+      <div class="tetris-dpad">
+        <button class="rot" data-act="rotate">⟳</button>
+        <button class="left" data-act="left">◀</button>
+        <button class="down" data-act="down">▼</button>
+        <button class="right" data-act="right">▶</button>
+        <button class="drop" data-act="drop">⤓</button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container"><p id="footer-text"></p></div>
+  </footer>
+
+  <script src="assets/js/config.js?v=3"></script>
+  <script src="assets/js/tetris.js?v=1"></script>
+  <script src="assets/js/player.js?v=13"></script>
+</body>
+</html>
