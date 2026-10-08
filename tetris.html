@@ -44,6 +44,17 @@
       justify-content: center;
       gap: 16px;
       flex-wrap: wrap;
+      align-items: flex-start;
+    }
+    .tetris-side {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+    .tetris-side-label {
+      font-size: 12px;
+      color: var(--text-muted);
     }
     #tetris-canvas {
       background: var(--bg);
@@ -60,16 +71,6 @@
       border-radius: 8px;
       display: block;
       touch-action: none;
-    }
-    .tetris-side {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      align-items: center;
-    }
-    .tetris-side-label {
-      font-size: 12px;
-      color: var(--text-muted);
     }
     .tetris-controls {
       margin-top: 16px;
@@ -102,14 +103,14 @@
       display: none;
     }
     .tetris-gameover.show { display: inline-block; }
-    /* 移动端按键 */
+    /* 移动端按键：默认隐藏，小屏显示并放到棋盘右侧 */
     .tetris-dpad {
       display: none;
-      margin: 16px auto 0;
       grid-template-columns: repeat(3, 56px);
       grid-template-rows: repeat(3, 56px);
       gap: 6px;
       justify-content: center;
+      margin: 0;
     }
     .tetris-dpad button {
       background: var(--surface);
@@ -131,14 +132,31 @@
     .tetris-dpad .drop { grid-column: 2; grid-row: 3; }
     @media (max-width: 640px) {
       .tetris-dpad { display: grid; }
-      /* 小屏：stats 横向滚动避免换行挤压 */
+      /* 小屏：stats 横向 wrap */
       .tetris-stats { flex-wrap: wrap; gap: 12px; font-size: 13px; }
       /* 预览框在窄屏适当缩小 */
       #tetris-next { width: 90px; height: 90px; }
+      /* 棋盘缩小，确保整盘可见 */
+      #tetris-canvas { width: 240px; height: 480px; }
+    }
+    @media (max-width: 480px) {
+      /* 极窄屏：棋盘 + D-pad 横向并排，D-pad 在右侧，预览隐藏（D-pad 替代占位） */
+      .tetris-side { display: none; }
+      #tetris-canvas { width: 200px; height: 400px; }
+      .tetris-dpad {
+        grid-template-columns: repeat(3, 44px);
+        grid-template-rows: repeat(3, 44px);
+        gap: 4px;
+      }
+      .tetris-dpad button { font-size: 16px; }
     }
     @media (max-width: 380px) {
-      /* 极窄屏：棋盘 + 预览竖向排列 */
-      .tetris-board-wrap { flex-direction: column-reverse; align-items: center; }
+      /* 超窄屏：进一步缩小 */
+      #tetris-canvas { width: 170px; height: 340px; }
+      .tetris-dpad {
+        grid-template-columns: repeat(3, 38px);
+        grid-template-rows: repeat(3, 38px);
+      }
     }
   </style>
 </head>
@@ -173,19 +191,19 @@
           <div class="tetris-side-label">下一个</div>
           <canvas id="tetris-next" width="120" height="120"></canvas>
         </div>
+        <div class="tetris-dpad">
+          <button class="rot" data-act="rotate">⟳</button>
+          <button class="left" data-act="left">◀</button>
+          <button class="down" data-act="down">▼</button>
+          <button class="right" data-act="right">▶</button>
+          <button class="drop" data-act="drop">⤓</button>
+        </div>
       </div>
       <div id="tetris-gameover" class="tetris-gameover">游戏结束！按「重新开始」再来一局</div>
       <div class="tetris-controls">
         <button id="tetris-start" class="tetris-btn">开始</button>
         <button id="tetris-pause" class="tetris-btn secondary">暂停</button>
         <button id="tetris-restart" class="tetris-btn secondary">重新开始</button>
-      </div>
-      <div class="tetris-dpad">
-        <button class="rot" data-act="rotate">⟳</button>
-        <button class="left" data-act="left">◀</button>
-        <button class="down" data-act="down">▼</button>
-        <button class="right" data-act="right">▶</button>
-        <button class="drop" data-act="drop">⤓</button>
       </div>
     </div>
   </main>

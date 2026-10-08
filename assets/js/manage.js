@@ -133,8 +133,12 @@ function renderList(list) {
     wrap.innerHTML = '<p class="empty">还没有文章</p>';
     return;
   }
-  // 按日期倒序
-  const sorted = list.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+  // 按日期倒序；同一天按 slug 降序（与首页一致，新在前）
+  const sorted = list.slice().sort((a, b) => {
+    const d = new Date(b.date) - new Date(a.date);
+    if (d !== 0) return d;
+    return (b.slug || '').localeCompare(a.slug || '');
+  });
   const frag = document.createDocumentFragment();
   sorted.forEach((p) => {
     const item = document.createElement('div');
@@ -161,7 +165,8 @@ async function render() {
   wrap.innerHTML = '<div class="loading">加载中…</div>';
   try {
     const { list } = await loadPosts();
-    renderList(list);
+    ALL_POSTS = list;
+    applyFilter();
   } catch (e) {
     if (!getSettings()) {
       wrap.innerHTML = '<p class="empty">请先在「写文章」页面配置 GitHub 信息</p>';
@@ -169,6 +174,38 @@ async function render() {
       wrap.innerHTML = `<p class="empty">加载失败：${e.message}</p>`;
     }
   }
+}
+
+/* ============ 搜索过滤 ============ */
+let ALL_POSTS = []; // 管理页本地保留完整列表
+function applyFilter() {
+  const q = (document.getElementById('manage-search')?.value || '').trim().toLowerCase();
+  let filtered = ALL_POSTS;
+  if (q) {
+    filtered = ALL_POSTS.filter(p => {
+      const title = (p.title || '').toLowerCase();
+      const slug = (p.slug || '').toLowerCase();
+      const tags = (p.tags || []).join(' ').toLowerCase();
+      return title.includes(q) || slug.includes(q) || tags.includes(q);
+    });
+  }
+  renderList(filtered);
+  const cnt = document.getElementById('manage-count');
+  if (cnt) {
+    const total = ALL_POSTS.length;
+    const shown = filtered.length;
+    cnt.textContent = q ? `${shown} / ${total} 篇` : `${total} 篇`;
+  }
+}
+
+function initSearch() {
+  const input = document.getElementById('manage-search');
+  if (!input) return;
+  let timer = null;
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(applyFilter, 150);
+  });
 }
 
 /* ============ 性能优化：事件委托（单一监听器） ============ */
@@ -206,4 +243,5 @@ async function onDelete(slug) {
 }
 
 applyConfig();
+initSearch();
 render();

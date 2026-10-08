@@ -30,6 +30,10 @@
   <main class="container">
     <h1 class="page-title">管理文章</h1>
     <p class="hint" style="margin-bottom:20px;">删除后不可恢复，请谨慎操作。删除后 Actions 会自动更新索引，约 1 分钟生效。</p>
+    <div class="manage-toolbar">
+      <input type="text" id="manage-search" class="manage-search" placeholder="搜索标题、标签或 slug…" autocomplete="off">
+      <span id="manage-count" class="manage-count"></span>
+    </div>
     <div id="manage-list" class="manage-list">
       <div class="loading">加载中…</div>
     </div>

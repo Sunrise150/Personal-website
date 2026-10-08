@@ -389,6 +389,34 @@ html.is-framed .hero { padding-top: 32px; }
 }
 
 /* ============ 管理页 ============ */
+.manage-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.manage-search {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+.manage-search:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.manage-count {
+  font-size: 13px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
 .manage-list {
   display: flex;
   flex-direction: column;
