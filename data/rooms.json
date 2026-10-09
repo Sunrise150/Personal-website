@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-10-09T19:56:00.255643+00:00",
+  "updatedAt": "2026-10-09T20:01:00.158089+00:00",
   "totalRooms": 8,
   "activeRooms": 8,
-  "totalPlayers": 14,
+  "totalPlayers": 15,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -50,7 +50,7 @@
       "ip": "204.44.87.181",
       "port": 10800,
       "name": "Wapchan.org Soku",
-      "online": 0,
+      "online": 1,
       "capacity": 64
     },
     {
