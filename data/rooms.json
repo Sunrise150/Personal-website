@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-10T03:41:01.354876+00:00",
+  "updatedAt": "2026-10-10T03:46:00.766569+00:00",
   "totalRooms": 8,
   "activeRooms": 8,
   "totalPlayers": 19,
@@ -8,7 +8,7 @@
       "ip": "51.91.101.151",
       "port": 10802,
       "name": "Clan War Lobby",
-      "online": 4,
+      "online": 3,
       "capacity": 48
     },
     {
@@ -43,7 +43,7 @@
       "ip": "43.136.23.115",
       "port": 6005,
       "name": "[CN 2]/report举报各种问题",
-      "online": 1,
+      "online": 0,
       "capacity": 70
     },
     {
@@ -57,7 +57,7 @@
       "ip": "43.136.23.115",
       "port": 6002,
       "name": "[CN 1] WIKI.514.LIVE",
-      "online": 13,
+      "online": 15,
       "capacity": 70
     }
   ]
