@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-10-13T22:56:02.348918+00:00",
-  "totalRooms": 9,
-  "activeRooms": 9,
-  "totalPlayers": 6,
+  "updatedAt": "2026-10-13T23:01:02.122460+00:00",
+  "totalRooms": 8,
+  "activeRooms": 8,
+  "totalPlayers": 7,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -43,7 +43,7 @@
       "ip": "43.136.23.115",
       "port": 6005,
       "name": "[CN 2]/report举报各种问题",
-      "online": 3,
+      "online": 4,
       "capacity": 70
     },
     {
@@ -59,13 +59,6 @@
       "name": "[CN 1] WIKI.514.LIVE",
       "online": 0,
       "capacity": 70
-    },
-    {
-      "ip": "178.174.147.208",
-      "port": 9001,
-      "name": "Touhou Sweden - Weekly Lobbies",
-      "online": 0,
-      "capacity": 15
     }
   ]
 }
