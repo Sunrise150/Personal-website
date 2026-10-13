@@ -43,7 +43,13 @@ const posts = files.map(file => {
   };
 });
 
-posts.sort((a, b) => new Date(b.date) - new Date(a.date));
+posts.sort((a, b) => {
+  const d = new Date(b.date) - new Date(a.date);
+  if (d !== 0) return d;
+  const ta = parseInt((a.slug || '').split('-').pop(), 36) || 0;
+  const tb = parseInt((b.slug || '').split('-').pop(), 36) || 0;
+  return tb - ta;
+});
 
 fs.mkdirSync(path.dirname(OUT_FILE), { recursive: true });
 fs.writeFileSync(OUT_FILE, JSON.stringify(posts, null, 2));

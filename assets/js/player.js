@@ -70,6 +70,19 @@
       }
     });
     _audio.addEventListener('loadedmetadata', save);
+    // 资源加载卡住或失败时自动切下一首
+    _audio.addEventListener('stalled', () => {
+      if (playing && _audio.readyState < 2) {
+        console.warn('[player] stalled, reloading');
+        try { _audio.load(); } catch (e) {}
+      }
+    });
+    _audio.addEventListener('error', () => {
+      console.warn('[player] audio error, skipping to next');
+      if (MUSIC.length > 1) {
+        setTimeout(() => load(current + 1, true, true), 500);
+      }
+    });
     // 注：不绑定 pause 事件，避免切换 src 时触发 pause 导致 UI 闪烁
     // pause 状态由 play() Promise 的 catch 与 pause() 函数显式管理
     return _audio;
@@ -345,8 +358,10 @@
   function save() {
     try {
       const a = _audio;
+      const item = currentItem();
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         current,
+        src: item ? item.src : '',
         time: a ? a.currentTime || 0 : 0,
         playing,
         pendingResume,
@@ -370,8 +385,17 @@
         const item = currentItem();
         if (!item) return;
 
+        // 验证：如果保存的 src 和当前 MUSIC[current].src 不一致，
+        // 说明列表变了，用 src 查找正确的索引
+        if (s.src && s.src !== item.src) {
+          const idx = MUSIC.findIndex(m => m.src === s.src);
+          if (idx >= 0) {
+            current = idx;
+          }
+        }
+
         const a = ensureAudio();
-        a.src = absSrc(item.src);
+        a.src = absSrc(currentItem().src);
 
         if (typeof s.time === 'number' && s.time > 0) {
           const apply = () => { try { a.currentTime = s.time; } catch (e) {} };
@@ -468,7 +492,31 @@
   window.addEventListener('pagehide', save);
   window.addEventListener('beforeunload', save);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') save();
+    if (document.visibilityState === 'hidden') {
+      save();
+    } else if (document.visibilityState === 'visible') {
+      // 从后台切回前台：手机浏览器会暂停音频，需检测并恢复
+      const a = _audio;
+      if (!a) return;
+      if (playing && a.paused) {
+        // 之前在播放，但被系统暂停了
+        // 检查 readyState，如果资源被清空则重新 load
+        if (a.readyState < 2) {
+          // 资源未加载完，重新 load
+          const item = currentItem();
+          if (item) {
+            a.src = absSrc(item.src);
+            a.load();
+          }
+        }
+        // 尝试恢复播放
+        setTimeout(() => {
+          if (a.paused && playing) {
+            play();
+          }
+        }, 300);
+      }
+    }
   });
 
   /* 初始化 */

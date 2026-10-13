@@ -133,11 +133,13 @@ function renderList(list) {
     wrap.innerHTML = '<p class="empty">还没有文章</p>';
     return;
   }
-  // 按日期倒序；同一天按 slug 降序（与首页一致，新在前）
+  // 按日期倒序；同一天按 slug 中的时间戳降序（与首页一致，新在前）
   const sorted = list.slice().sort((a, b) => {
     const d = new Date(b.date) - new Date(a.date);
     if (d !== 0) return d;
-    return (b.slug || '').localeCompare(a.slug || '');
+    const ta = parseInt((a.slug || '').split('-').pop(), 36) || 0;
+    const tb = parseInt((b.slug || '').split('-').pop(), 36) || 0;
+    return tb - ta;
   });
   const frag = document.createDocumentFragment();
   sorted.forEach((p) => {

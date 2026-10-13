@@ -156,7 +156,7 @@
   </footer>
 
   <script src="assets/js/config.js?v=3"></script>
-  <script src="assets/js/player.js?v=13"></script>
+  <script src="assets/js/player.js?v=14"></script>
   <script>
     (function applyShellConfig() {
       const t = document.getElementById('site-title');
@@ -239,7 +239,9 @@
 
         const targetHash = '#' + sub;
         if (location.hash !== targetHash) {
-          history.pushState({ path: sub }, '', '#' + sub);
+          // 用 replaceState 而非 pushState：避免每次 iframe 导航都新增历史条目
+          // 这样用户按一次返回键就能离开 shell，不用多次按返回
+          history.replaceState({ path: sub }, '', '#' + sub);
         }
 
         nav.querySelectorAll('a').forEach(a => {
@@ -309,6 +311,39 @@
       });
 
       initFrame();
+
+      /* ============ 手机端导航栏滚动跟随：向下滑隐藏，向上滑显示 ============ */
+      let lastScrollY = 0;
+      let ticking = false;
+      function onScroll() {
+        const y = window.scrollY;
+        const header = document.querySelector('.site-header');
+        if (!header) return;
+        // 顶部附近总是显示
+        if (y < 80) {
+          header.classList.remove('is-hidden');
+          lastScrollY = y;
+          return;
+        }
+        const delta = y - lastScrollY;
+        if (Math.abs(delta) > 5) {
+          if (delta > 0) {
+            // 向下滑：隐藏
+            header.classList.add('is-hidden');
+          } else {
+            // 向上滑：显示
+            header.classList.remove('is-hidden');
+          }
+          lastScrollY = y;
+        }
+        ticking = false;
+      }
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          requestAnimationFrame(onScroll);
+          ticking = true;
+        }
+      }, { passive: true });
     })();
 
     /* 背景流星 */

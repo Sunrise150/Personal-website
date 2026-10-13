@@ -73,11 +73,14 @@ async function renderPosts() {
     const res = await fetch('data/posts.json?t=' + Date.now());
     if (!res.ok) throw new Error('无法加载文章列表');
     ALL_POSTS = await res.json();
-    // 排序：日期降序；同一天则按 slug 降序（slug 含 Date.now() 时间戳，后上传的更大）
+    // 排序：日期降序；同一天按 slug 中的时间戳降序（后发布的在前）
     ALL_POSTS.sort((a, b) => {
       const d = new Date(b.date) - new Date(a.date);
       if (d !== 0) return d;
-      return (b.slug || '').localeCompare(a.slug || '');
+      // 从 slug 末尾提取时间戳（base36 的 Date.now 后 5 位），后发布的更大
+      const ta = parseInt((a.slug || '').split('-').pop(), 36) || 0;
+      const tb = parseInt((b.slug || '').split('-').pop(), 36) || 0;
+      return tb - ta;
     });
     renderPostList(ALL_POSTS);
     initPostSearch(); // 文章加载完成才初始化搜索框
