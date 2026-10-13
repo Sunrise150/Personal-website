@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-10-13T17:46:00.565671+00:00",
+  "updatedAt": "2026-10-13T17:51:01.700229+00:00",
   "totalRooms": 9,
   "activeRooms": 9,
-  "totalPlayers": 28,
+  "totalPlayers": 25,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -36,14 +36,14 @@
       "ip": "94.103.3.82",
       "port": 10800,
       "name": "Prigranichnoe | Ru",
-      "online": 0,
+      "online": 1,
       "capacity": 24
     },
     {
       "ip": "43.136.23.115",
       "port": 6005,
       "name": "[CN 2]/report举报各种问题",
-      "online": 23,
+      "online": 18,
       "capacity": 70
     },
     {
@@ -64,7 +64,7 @@
       "ip": "178.174.147.208",
       "port": 9001,
       "name": "Touhou Sweden - Weekly Lobbies",
-      "online": 3,
+      "online": 4,
       "capacity": 15
     }
   ]
