@@ -1,11 +1,5 @@
 [
   {
-    "name": "GMR-恶魔城.被夺走的刻印 黄昏的圣痕",
-    "artist": "山根美智流",
-    "src": "assets/music/music-muuybpix-GMR-恶魔城_被夺走的刻印_黄昏的圣痕.mp3",
-    "uploadedAt": 1791186738928
-  },
-  {
     "name": "山根美智留-PS《恶魔城-月下夜想曲》黄金の舞曲",
     "artist": "山根美智流",
     "src": "assets/music/music-muv3hn51-山根美智留-PS_恶魔城-月下夜想曲_黄金_舞曲.mp3",
@@ -22,5 +16,35 @@
     "artist": "东方",
     "src": "assets/music/music-muww9dd4-Halozy-物凄_狂_物凄_.mp3",
     "uploadedAt": 1791304212947
+  },
+  {
+    "name": "幽閉サテライト-色は匂へど散りぬるを(with senya)、、u003c幻想万華鏡 春雪異変の章 OP主題歌、、u003e",
+    "artist": "东方",
+    "src": "assets/music/music-muz8iq9b-幽閉_-色_匂_散_with_senya_u003c幻想万華鏡_春雪異変_章_O.mp3",
+    "uploadedAt": 1791445743540
+  },
+  {
+    "name": "藤岡竜輔-Gears of Fortune",
+    "artist": "山根美智流",
+    "src": "assets/music/music-muz9dpy4-藤岡竜輔-Gears_of_Fortune.mp3",
+    "uploadedAt": 1791447193845
+  },
+  {
+    "name": "华语群星-PS《恶魔城-月下夜想曲》神々たちのレクイエム",
+    "artist": "山根美智流",
+    "src": "assets/music/music-muz9ig8e-华语群星-PS_恶魔城-月下夜想曲_神_.mp3",
+    "uploadedAt": 1791447396636
+  },
+  {
+    "name": "山根美智留-悲哀の呪縛",
+    "artist": "山根美智流",
+    "src": "assets/music/music-muz9oi9o-山根美智留-悲哀_呪縛.mp3",
+    "uploadedAt": 1791447687790
+  },
+  {
+    "name": "IOSYS-チルノのパーフェクトさんすう教室",
+    "artist": "东方",
+    "src": "assets/music/music-muz9wmyt-IOSYS-_教室.mp3",
+    "uploadedAt": 1791448085037
   }
 ]
