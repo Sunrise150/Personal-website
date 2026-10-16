@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-16T03:35:50.480741+00:00",
+  "updatedAt": "2026-10-16T03:40:50.052232+00:00",
   "totalRooms": 8,
   "activeRooms": 8,
   "totalPlayers": 31,
@@ -36,7 +36,7 @@
       "ip": "94.103.3.82",
       "port": 10800,
       "name": "Prigranichnoe | Ru",
-      "online": 1,
+      "online": 2,
       "capacity": 24
     },
     {
@@ -57,7 +57,7 @@
       "ip": "43.136.23.115",
       "port": 6002,
       "name": "[CN 1] WIKI.514.LIVE",
-      "online": 25,
+      "online": 24,
       "capacity": 70
     }
   ]
