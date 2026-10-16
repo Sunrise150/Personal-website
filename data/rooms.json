@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-10-16T17:30:48.376428+00:00",
+  "updatedAt": "2026-10-16T17:35:47.510641+00:00",
   "totalRooms": 9,
   "activeRooms": 9,
-  "totalPlayers": 48,
+  "totalPlayers": 41,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -21,8 +21,8 @@
     {
       "ip": "51.91.101.151",
       "port": 10800,
-      "name": "SokuLobbies Public Vanilla Lobby \u0005",
-      "online": 5,
+      "name": "SokuLobbies Public Vanilla Lobby \u0003",
+      "online": 3,
       "capacity": 32
     },
     {
@@ -57,14 +57,14 @@
       "ip": "43.136.23.115",
       "port": 6002,
       "name": "[CN 1] WIKI.514.LIVE",
-      "online": 29,
+      "online": 27,
       "capacity": 70
     },
     {
       "ip": "43.136.23.115",
       "port": 6006,
       "name": "[CN 3] 好多人啊",
-      "online": 9,
+      "online": 6,
       "capacity": 70
     }
   ]
