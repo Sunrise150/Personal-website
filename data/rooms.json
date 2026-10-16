@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-10-16T03:50:47.026087+00:00",
+  "updatedAt": "2026-10-16T03:55:49.210961+00:00",
   "totalRooms": 8,
   "activeRooms": 8,
-  "totalPlayers": 30,
+  "totalPlayers": 32,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -36,7 +36,7 @@
       "ip": "94.103.3.82",
       "port": 10800,
       "name": "Prigranichnoe | Ru",
-      "online": 0,
+      "online": 2,
       "capacity": 24
     },
     {
