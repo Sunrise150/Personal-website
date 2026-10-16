@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>数独 - 日出的blog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css?v=6">
+  <script>if (window.top !== window.self) document.documentElement.classList.add('is-framed');</script>
+  <style>
+    body { overscroll-behavior: contain; }
+    .sd-wrap {
+      max-width: 560px;
+      margin: 24px auto;
+      padding: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      text-align: center;
+    }
+    .sd-wrap h1 {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .sd-hint {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+    .sd-stats {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    .sd-stats strong { color: var(--accent); }
+    .sd-difficulty {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .sd-difficulty button {
+      padding: 6px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .sd-difficulty button.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .sd-board-wrap {
+      display: inline-block;
+      margin: 0 auto;
+    }
+    .sd-board {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      gap: 0;
+      background: var(--text);
+      border: 3px solid var(--text);
+      border-radius: 4px;
+      overflow: hidden;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .sd-cell {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 600;
+      background: var(--bg);
+      color: var(--text);
+      cursor: pointer;
+      position: relative;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .sd-cell:nth-child(9n) { border-right: none; }
+    .sd-cell:nth-child(n+73) { border-bottom: none; }
+    /* 3x3 宫格粗边框 */
+    .sd-cell[data-col="2"], .sd-cell[data-col="5"] { border-right: 2px solid var(--text); }
+    .sd-cell[data-row="2"], .sd-cell[data-row="5"] { border-bottom: 2px solid var(--text); }
+    .sd-cell.fixed { font-weight: 700; }
+    .sd-cell.selected {
+      background: rgba(37, 99, 235, 0.15);
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+      z-index: 1;
+    }
+    .sd-cell.same { color: var(--accent); font-weight: 700; }
+    /* 同行/同列/同宫格：不用背景色，只用极淡的文字提示 */
+    .sd-cell.highlight { color: var(--text-muted); }
+    .sd-cell.error { color: #ef4444; background: rgba(239, 68, 68, 0.08); }
+    .sd-cell.note { font-size: 10px; color: var(--text-muted); font-weight: 400; }
+    .sd-cell.note .note-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      width: 100%;
+      height: 100%;
+      font-size: 9px;
+      color: var(--text-muted);
+    }
+    .sd-cell.note .note-grid span {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    @media (prefers-color-scheme: dark) {
+      .sd-cell { background: #0c0a09; }
+      .sd-cell.fixed { background: #1c1917; }
+    }
+    @media (max-width: 420px) {
+      .sd-cell { width: 30px; height: 30px; font-size: 15px; }
+    }
+
+    .sd-num-pad {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin-top: 16px;
+      max-width: 320px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .sd-num-btn {
+      padding: 12px 0;
+      font-size: 18px;
+      font-weight: 600;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .sd-num-btn:active { background: var(--accent); color: #fff; }
+    .sd-num-btn[data-num="0"] { grid-column: span 2; font-size: 14px; }
+    .sd-num-btn[data-num="h"] { grid-column: span 2; font-size: 14px; }
+    .sd-toolbar {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .sd-tool-btn {
+      padding: 8px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .sd-tool-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .sd-result {
+      margin-top: 12px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      display: none;
+    }
+    .sd-result.win { background: #22c55e; color: #fff; display: inline-block; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="site-title" id="site-title"></a>
+      <nav>
+        <a href="index.html">文章</a>
+        <a href="write.html">写文章</a>
+        <a href="manage.html">管理</a>
+        <a href="music.html">音乐</a>
+        <a href="rooms.html">房间人数查看</a>
+        <a href="games.html">游戏</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="sd-wrap">
+      <h1>数独</h1>
+      <p class="sd-hint">每行、每列、每个 3×3 宫格内数字 1-9 各出现一次。点选格子后输入。</p>
+      <div class="sd-difficulty">
+        <button data-level="easy" class="active">简单</button>
+        <button data-level="medium">中等</button>
+        <button data-level="hard">困难</button>
+      </div>
+      <div class="sd-stats">
+        <div>⏱ <strong id="sd-time">0</strong>s</div>
+        <div>✅ <strong id="sd-progress">0</strong>/45</div>
+      </div>
+      <div class="sd-board-wrap">
+        <div id="sd-board" class="sd-board"></div>
+      </div>
+      <div class="sd-toolbar">
+        <button id="sd-note" class="sd-tool-btn">✏️ 笔记</button>
+        <button id="sd-hint" class="sd-tool-btn">💡 提示</button>
+        <button id="sd-undo" class="sd-tool-btn">↩ 撤销</button>
+        <button id="sd-new" class="sd-tool-btn">🔄 新游戏</button>
+      </div>
+      <div class="sd-num-pad" id="sd-num-pad">
+        <button class="sd-num-btn" data-num="1">1</button>
+        <button class="sd-num-btn" data-num="2">2</button>
+        <button class="sd-num-btn" data-num="3">3</button>
+        <button class="sd-num-btn" data-num="4">4</button>
+        <button class="sd-num-btn" data-num="5">5</button>
+        <button class="sd-num-btn" data-num="6">6</button>
+        <button class="sd-num-btn" data-num="7">7</button>
+        <button class="sd-num-btn" data-num="8">8</button>
+        <button class="sd-num-btn" data-num="9">9</button>
+        <button class="sd-num-btn" data-num="0">✕ 清除</button>
+      </div>
+      <div id="sd-result" class="sd-result"></div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container"><p id="footer-text"></p></div>
+  </footer>
+
+  <script src="assets/js/config.js?v=3"></script>
+  <script src="assets/js/sudoku.js?v=1"></script>
+  <script src="assets/js/player.js?v=14"></script>
+</body>
+</html>

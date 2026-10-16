@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>飞机大战 - 日出的blog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css?v=6">
+  <script>if (window.top !== window.self) document.documentElement.classList.add('is-framed');</script>
+  <style>
+    body { overscroll-behavior: contain; background: #0c0a09; }
+    .ft-wrap {
+      max-width: 480px;
+      margin: 24px auto;
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      text-align: center;
+    }
+    .ft-wrap h1 {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .ft-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .ft-stats {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+    .ft-stats strong { color: var(--accent); }
+    #ft-canvas {
+      background: linear-gradient(180deg, #0c0a09 0%, #1c1917 100%);
+      border: 2px solid #292524;
+      border-radius: 8px;
+      display: block;
+      margin: 0 auto;
+      touch-action: none;
+      max-width: 100%;
+      height: auto;
+    }
+    .ft-controls {
+      margin-top: 12px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .ft-btn {
+      padding: 8px 20px;
+      background: var(--accent);
+      color: #fff;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .ft-btn.secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .ft-gameover {
+      margin-top: 8px;
+      padding: 8px 16px;
+      background: #ef4444;
+      color: #fff;
+      border-radius: 8px;
+      font-weight: 700;
+      display: none;
+    }
+    .ft-gameover.show { display: inline-block; }
+    /* 移动端虚拟摇杆 + 射击按钮 */
+    .ft-mobile {
+      display: none;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: 12px;
+      padding: 0 16px;
+    }
+    .ft-joystick {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      border: 2px solid rgba(255,255,255,0.3);
+      position: relative;
+      touch-action: none;
+    }
+    .ft-joystick-knob {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(96, 165, 250, 0.7);
+      position: absolute;
+      top: 30px;
+      left: 30px;
+      pointer-events: none;
+    }
+    .ft-fire-btn {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.7);
+      border: 2px solid rgba(255,255,255,0.3);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .ft-fire-btn:active { background: rgba(239, 68, 68, 1); }
+    @media (max-width: 600px) {
+      .ft-mobile { display: flex; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="site-title" id="site-title"></a>
+      <nav>
+        <a href="index.html">文章</a>
+        <a href="write.html">写文章</a>
+        <a href="manage.html">管理</a>
+        <a href="music.html">音乐</a>
+        <a href="rooms.html">房间人数查看</a>
+        <a href="games.html">游戏</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="ft-wrap">
+      <h1>飞机大战</h1>
+      <p class="ft-hint">方向键/WASD 移动，空格射击。移动设备用虚拟摇杆。</p>
+      <div class="ft-stats">
+        <div>得分：<strong id="ft-score">0</strong></div>
+        <div>生命：<strong id="ft-lives">3</strong></div>
+        <div>波次：<strong id="ft-wave">1</strong></div>
+        <div>最高：<strong id="ft-best">0</strong></div>
+      </div>
+      <canvas id="ft-canvas" width="300" height="450"></canvas>
+      <div id="ft-gameover" class="ft-gameover">游戏结束！</div>
+      <div class="ft-controls">
+        <button id="ft-start" class="ft-btn">开始</button>
+        <button id="ft-pause" class="ft-btn secondary">暂停</button>
+        <button id="ft-restart" class="ft-btn secondary">重新开始</button>
+      </div>
+      <div class="ft-mobile">
+        <div class="ft-joystick" id="ft-joystick">
+          <div class="ft-joystick-knob" id="ft-joystick-knob"></div>
+        </div>
+        <button class="ft-fire-btn" id="ft-fire-btn">FIRE</button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container"><p id="footer-text"></p></div>
+  </footer>
+
+  <script src="assets/js/config.js?v=3"></script>
+  <script src="assets/js/fighter.js?v=1"></script>
+  <script src="assets/js/player.js?v=14"></script>
+</body>
+</html>

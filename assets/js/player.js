@@ -345,7 +345,10 @@
     try {
       const frame = document.getElementById('content-frame');
       const subPath = frame && frame.contentWindow ? frame.contentWindow.location.pathname.toLowerCase() : '';
-      if (subPath.endsWith('/snake.html') || subPath.endsWith('/tetris.html')) return;
+      if (subPath.endsWith('/snake.html') || subPath.endsWith('/tetris.html') ||
+          subPath.endsWith('/minesweeper.html') || subPath.endsWith('/sudoku.html') ||
+          subPath.endsWith('/fighter.html') || subPath.endsWith('/pacman.html') ||
+          subPath.endsWith('/sokoban.html')) return;
     } catch (e) {}
     setMode('peek');
     clearTimeout(peekTimer);
