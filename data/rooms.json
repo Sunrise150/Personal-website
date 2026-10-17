@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-17T12:35:26.313583+00:00",
+  "updatedAt": "2026-10-17T12:40:27.876060+00:00",
   "totalRooms": 9,
   "activeRooms": 9,
   "totalPlayers": 121,
@@ -36,14 +36,14 @@
       "ip": "94.103.3.82",
       "port": 10800,
       "name": "Prigranichnoe | Ru",
-      "online": 2,
+      "online": 1,
       "capacity": 24
     },
     {
       "ip": "43.136.23.115",
       "port": 6005,
       "name": "[CN 2]/report举报各种问题",
-      "online": 29,
+      "online": 32,
       "capacity": 70
     },
     {
@@ -57,14 +57,14 @@
       "ip": "43.136.23.115",
       "port": 6002,
       "name": "[CN 1] WIKI.514.LIVE",
-      "online": 69,
+      "online": 66,
       "capacity": 70
     },
     {
       "ip": "43.136.23.115",
       "port": 6006,
       "name": "[CN 3] 好多人啊",
-      "online": 15,
+      "online": 16,
       "capacity": 70
     }
   ]
