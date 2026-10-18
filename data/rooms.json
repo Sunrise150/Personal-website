@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-10-18T02:15:23.285930+00:00",
+  "updatedAt": "2026-10-18T02:20:23.597812+00:00",
   "totalRooms": 9,
   "activeRooms": 9,
-  "totalPlayers": 45,
+  "totalPlayers": 46,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -50,7 +50,7 @@
       "ip": "43.136.23.115",
       "port": 6002,
       "name": "[CN 1] WIKI.514.LIVE",
-      "online": 39,
+      "online": 40,
       "capacity": 70
     },
     {
