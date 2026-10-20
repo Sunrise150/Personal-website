@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-20T21:45:33.229962+00:00",
+  "updatedAt": "2026-10-20T21:50:34.558546+00:00",
   "totalRooms": 9,
   "activeRooms": 9,
   "totalPlayers": 7,
@@ -8,14 +8,14 @@
       "ip": "51.91.101.151",
       "port": 10802,
       "name": "Clan War Lobby",
-      "online": 3,
+      "online": 4,
       "capacity": 48
     },
     {
       "ip": "51.91.101.151",
       "port": 10801,
       "name": "SokuLobbies Public Tag Lobby",
-      "online": 1,
+      "online": 0,
       "capacity": 32
     },
     {
@@ -50,14 +50,14 @@
       "ip": "43.136.23.115",
       "port": 6000,
       "name": "[CN 1] WIKI.514.LIVE",
-      "online": 3,
+      "online": 2,
       "capacity": 70
     },
     {
       "ip": "43.136.23.115",
       "port": 6009,
       "name": "[CN 3]好多人啊",
-      "online": 0,
+      "online": 1,
       "capacity": 120
     },
     {
