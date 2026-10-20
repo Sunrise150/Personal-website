@@ -1,14 +1,14 @@
 {
-  "updatedAt": "2026-10-20T01:10:31.487830+00:00",
+  "updatedAt": "2026-10-20T01:15:31.699117+00:00",
   "totalRooms": 8,
   "activeRooms": 8,
-  "totalPlayers": 6,
+  "totalPlayers": 7,
   "rooms": [
     {
       "ip": "51.91.101.151",
       "port": 10802,
       "name": "Clan War Lobby",
-      "online": 2,
+      "online": 3,
       "capacity": 48
     },
     {
