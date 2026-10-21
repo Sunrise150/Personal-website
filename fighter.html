@@ -35,6 +35,8 @@
     .ft-joystick-knob { width: 40px; height: 40px; border-radius: 50%; background: rgba(96, 165, 250, 0.7); position: absolute; top: 30px; left: 30px; pointer-events: none; }
     .ft-fire-btn { width: 80px; height: 80px; border-radius: 50%; background: rgba(239, 68, 68, 0.7); border: 2px solid rgba(255,255,255,0.3); color: #fff; font-size: 14px; font-weight: 700; touch-action: none; user-select: none; -webkit-user-select: none; }
     .ft-fire-btn:active { background: rgba(239, 68, 68, 1); }
+    .ft-slow-btn { width: 64px; height: 64px; border-radius: 50%; background: rgba(96, 165, 250, 0.7); border: 2px solid rgba(255,255,255,0.3); color: #fff; font-size: 12px; font-weight: 700; touch-action: none; user-select: none; -webkit-user-select: none; }
+    .ft-slow-btn:active, .ft-slow-btn.active { background: rgba(96, 165, 250, 1); }
     .ft-mobile-options { display: none; justify-content: center; gap: 12px; margin-top: 8px; font-size: 12px; color: var(--text-muted); }
     .ft-mobile-options label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
     @media (max-width: 600px) { .ft-mobile { display: flex; } .ft-mobile-options { display: flex; } }
@@ -100,6 +102,7 @@
         <div class="ft-joystick" id="ft-joystick">
           <div class="ft-joystick-knob" id="ft-joystick-knob"></div>
         </div>
+        <button class="ft-slow-btn" id="ft-slow-btn">慢速</button>
         <button class="ft-fire-btn" id="ft-fire-btn">FIRE</button>
       </div>
       <div class="ft-scores">
@@ -120,7 +123,7 @@
   <div id="ft-toast" class="ft-toast"></div>
 
   <script src="assets/js/config.js?v=3"></script>
-  <script src="assets/js/fighter.js?v=1005"></script>
+  <script src="assets/js/fighter.js?v=1006"></script>
   <script src="assets/js/player.js?v=14"></script>
 </body>
 </html>

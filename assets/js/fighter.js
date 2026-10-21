@@ -886,6 +886,19 @@
   fireBtn.addEventListener('mouseup', () => fireHeld = false);
   fireBtn.addEventListener('mouseleave', () => fireHeld = false);
 
+  // 手机端慢速按键（等同 Shift）
+  const slowBtn = document.getElementById('ft-slow-btn');
+  function setSlowMo(v) {
+    slowMo = v;
+    if (v) slowBtn.classList.add('active');
+    else slowBtn.classList.remove('active');
+  }
+  slowBtn.addEventListener('touchstart', (e) => { e.preventDefault(); setSlowMo(true); }, { passive: false });
+  slowBtn.addEventListener('touchend', (e) => { e.preventDefault(); setSlowMo(false); });
+  slowBtn.addEventListener('mousedown', () => setSlowMo(true));
+  slowBtn.addEventListener('mouseup', () => setSlowMo(false));
+  slowBtn.addEventListener('mouseleave', () => setSlowMo(false));
+
   function applyConfig() {
     document.getElementById('site-title').textContent = SITE_CONFIG.title;
     document.getElementById('footer-text').textContent = SITE_CONFIG.footer;
