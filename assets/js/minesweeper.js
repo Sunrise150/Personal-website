@@ -229,25 +229,28 @@
   // 移动端：长按 = 标旗
   let longPressTimer = null;
   let longPressFired = false;
+  let longPressTarget = null;
   $board.addEventListener('touchstart', (e) => {
     const cell = e.target.closest('.ms-cell');
     if (!cell) return;
+    e.preventDefault();
     longPressFired = false;
+    longPressTarget = cell;
     longPressTimer = setTimeout(() => {
       longPressFired = true;
       onCellRightClick(Number(cell.dataset.r), Number(cell.dataset.c));
     }, 500);
-  }, { passive: true });
+  }, { passive: false });
   $board.addEventListener('touchend', (e) => {
     if (longPressTimer) clearTimeout(longPressTimer);
     if (longPressFired) {
       e.preventDefault();
       longPressFired = false;
     }
-  });
+  }, { passive: false });
   $board.addEventListener('touchmove', () => {
     if (longPressTimer) clearTimeout(longPressTimer);
-  });
+  }, { passive: false });
 
   // 难度切换
   document.querySelectorAll('.ms-difficulty button').forEach(btn => {

@@ -11,119 +11,48 @@
   <script>if (window.top !== window.self) document.documentElement.classList.add('is-framed');</script>
   <style>
     body { overscroll-behavior: contain; background: #0c0a09; }
-    .ft-wrap {
-      max-width: 480px;
-      margin: 24px auto;
-      padding: 16px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      text-align: center;
-    }
-    .ft-wrap h1 {
-      font-family: 'Noto Serif SC', serif;
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-    .ft-hint {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-bottom: 12px;
-    }
-    .ft-stats {
-      display: flex;
-      justify-content: center;
-      gap: 16px;
-      margin-bottom: 8px;
-      font-size: 13px;
-    }
+    .ft-wrap { max-width: 480px; margin: 24px auto; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; text-align: center; }
+    .ft-wrap h1 { font-family: 'Noto Serif SC', serif; font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+    .ft-hint { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; line-height: 1.5; }
+    .ft-difficulty { display: flex; justify-content: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+    .ft-difficulty button { padding: 5px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; font-size: 12px; color: var(--text); cursor: pointer; }
+    .ft-difficulty button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .ft-stats { display: flex; justify-content: center; gap: 14px; margin-bottom: 8px; font-size: 12px; flex-wrap: wrap; }
     .ft-stats strong { color: var(--accent); }
-    #ft-canvas {
-      background: linear-gradient(180deg, #0c0a09 0%, #1c1917 100%);
-      border: 2px solid #292524;
-      border-radius: 8px;
-      display: block;
-      margin: 0 auto;
-      touch-action: none;
-      max-width: 100%;
-      height: auto;
-    }
-    .ft-controls {
-      margin-top: 12px;
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    .ft-btn {
-      padding: 8px 20px;
-      background: var(--accent);
-      color: #fff;
-      border: 0;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .ft-btn.secondary {
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-    .ft-gameover {
-      margin-top: 8px;
-      padding: 8px 16px;
-      background: #ef4444;
-      color: #fff;
-      border-radius: 8px;
-      font-weight: 700;
-      display: none;
-    }
+    .ft-buffs { display: flex; justify-content: center; gap: 8px; margin-bottom: 8px; font-size: 11px; flex-wrap: wrap; min-height: 18px; }
+    .ft-buff { padding: 2px 8px; border-radius: 10px; background: rgba(96,165,250,0.2); color: #60a5fa; border: 1px solid #60a5fa; }
+    .ft-buff.shield { background: rgba(34,197,94,0.2); color: #22c55e; border-color: #22c55e; }
+    .ft-buff.power { background: rgba(251,191,36,0.2); color: #fbbf24; border-color: #fbbf24; }
+    .ft-buff.laser { background: rgba(236,72,153,0.2); color: #ec4899; border-color: #ec4899; }
+    #ft-canvas { background: linear-gradient(180deg, #0c0a09 0%, #1c1917 100%); border: 2px solid #292524; border-radius: 8px; display: block; margin: 0 auto; touch-action: none; max-width: 100%; height: auto; }
+    .ft-controls { margin-top: 12px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+    .ft-btn { padding: 8px 20px; background: var(--accent); color: #fff; border: 0; border-radius: 8px; cursor: pointer; font-size: 14px; }
+    .ft-btn.secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .ft-gameover { margin-top: 8px; padding: 8px 16px; background: #ef4444; color: #fff; border-radius: 8px; font-weight: 700; display: none; }
     .ft-gameover.show { display: inline-block; }
-    /* 移动端虚拟摇杆 + 射击按钮 */
-    .ft-mobile {
-      display: none;
-      justify-content: space-between;
-      align-items: flex-end;
-      margin-top: 12px;
-      padding: 0 16px;
-    }
-    .ft-joystick {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.1);
-      border: 2px solid rgba(255,255,255,0.3);
-      position: relative;
-      touch-action: none;
-    }
-    .ft-joystick-knob {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: rgba(96, 165, 250, 0.7);
-      position: absolute;
-      top: 30px;
-      left: 30px;
-      pointer-events: none;
-    }
-    .ft-fire-btn {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      background: rgba(239, 68, 68, 0.7);
-      border: 2px solid rgba(255,255,255,0.3);
-      color: #fff;
-      font-size: 14px;
-      font-weight: 700;
-      touch-action: none;
-      user-select: none;
-      -webkit-user-select: none;
-    }
+    .ft-mobile { display: none; justify-content: space-between; align-items: flex-end; margin-top: 8px; padding: 0 16px; }
+    .ft-joystick { width: 100px; height: 100px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); position: relative; touch-action: none; }
+    .ft-joystick-knob { width: 40px; height: 40px; border-radius: 50%; background: rgba(96, 165, 250, 0.7); position: absolute; top: 30px; left: 30px; pointer-events: none; }
+    .ft-fire-btn { width: 80px; height: 80px; border-radius: 50%; background: rgba(239, 68, 68, 0.7); border: 2px solid rgba(255,255,255,0.3); color: #fff; font-size: 14px; font-weight: 700; touch-action: none; user-select: none; -webkit-user-select: none; }
     .ft-fire-btn:active { background: rgba(239, 68, 68, 1); }
-    @media (max-width: 600px) {
-      .ft-mobile { display: flex; }
-    }
+    .ft-mobile-options { display: none; justify-content: center; gap: 12px; margin-top: 8px; font-size: 12px; color: var(--text-muted); }
+    .ft-mobile-options label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+    @media (max-width: 600px) { .ft-mobile { display: flex; } .ft-mobile-options { display: flex; } }
+    .ft-scores { margin-top: 16px; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; text-align: left; }
+    .ft-scores h3 { font-size: 14px; margin: 0 0 8px; text-align: center; color: var(--accent); }
+    .ft-score-row { display: flex; justify-content: space-between; padding: 4px 8px; font-size: 12px; border-bottom: 1px solid var(--border); }
+    .ft-score-row:last-child { border-bottom: 0; }
+    .ft-score-row .rank { width: 24px; color: var(--text-muted); font-weight: 700; }
+    .ft-score-row .name { flex: 1; color: var(--text); }
+    .ft-score-row .score { color: var(--accent); font-weight: 700; }
+    .ft-score-row.win { background: rgba(34,197,94,0.1); }
+    .ft-upload { margin-top: 12px; display: flex; gap: 6px; justify-content: center; }
+    .ft-upload input { flex: 1; max-width: 140px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 13px; }
+    .ft-upload button { padding: 6px 12px; background: var(--accent); color: #fff; border: 0; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    .ft-upload button:disabled { opacity: 0.5; cursor: not-allowed; }
+    /* 掉落道具提示 */
+    .ft-toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 10px 20px; background: rgba(0,0,0,0.8); color: #fff; border-radius: 8px; font-weight: 700; font-size: 16px; z-index: 1000; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+    .ft-toast.show { opacity: 1; }
   </style>
 </head>
 <body>
@@ -144,13 +73,19 @@
   <main class="container">
     <div class="ft-wrap">
       <h1>飞机大战</h1>
-      <p class="ft-hint">方向键/WASD 移动，空格射击。移动设备用虚拟摇杆。</p>
+      <p class="ft-hint">WASD/方向键移动，空格射击，Shift 减速+显示判定点。手机端用摇杆+射击按钮。</p>
+      <div class="ft-difficulty">
+        <button data-diff="easy" class="active">简单</button>
+        <button data-diff="normal">普通</button>
+        <button data-diff="hard">困难</button>
+      </div>
       <div class="ft-stats">
         <div>得分：<strong id="ft-score">0</strong></div>
         <div>生命：<strong id="ft-lives">3</strong></div>
         <div>波次：<strong id="ft-wave">1</strong></div>
         <div>最高：<strong id="ft-best">0</strong></div>
       </div>
+      <div id="ft-buffs" class="ft-buffs"></div>
       <canvas id="ft-canvas" width="300" height="450"></canvas>
       <div id="ft-gameover" class="ft-gameover">游戏结束！</div>
       <div class="ft-controls">
@@ -158,11 +93,22 @@
         <button id="ft-pause" class="ft-btn secondary">暂停</button>
         <button id="ft-restart" class="ft-btn secondary">重新开始</button>
       </div>
+      <div class="ft-mobile-options">
+        <label><input type="checkbox" id="ft-auto-fire"> 自动射击</label>
+      </div>
       <div class="ft-mobile">
         <div class="ft-joystick" id="ft-joystick">
           <div class="ft-joystick-knob" id="ft-joystick-knob"></div>
         </div>
         <button class="ft-fire-btn" id="ft-fire-btn">FIRE</button>
+      </div>
+      <div class="ft-scores">
+        <h3>🏆 战绩榜 Top 10</h3>
+        <div id="ft-score-list"></div>
+        <div class="ft-upload">
+          <input id="ft-name-input" placeholder="输入昵称" maxlength="12" onkeydown="event.stopPropagation()" onkeyup="event.stopPropagation()">
+          <button id="ft-upload-btn">上传当前成绩</button>
+        </div>
       </div>
     </div>
   </main>
@@ -171,8 +117,10 @@
     <div class="container"><p id="footer-text"></p></div>
   </footer>
 
+  <div id="ft-toast" class="ft-toast"></div>
+
   <script src="assets/js/config.js?v=3"></script>
-  <script src="assets/js/fighter.js?v=1"></script>
+  <script src="assets/js/fighter.js?v=1005"></script>
   <script src="assets/js/player.js?v=14"></script>
 </body>
 </html>
