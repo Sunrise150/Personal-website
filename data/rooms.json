@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-10-22T23:40:46.701131+00:00",
-  "totalRooms": 9,
+  "updatedAt": "2026-10-22T23:45:50.096731+00:00",
+  "totalRooms": 10,
   "activeRooms": 9,
-  "totalPlayers": 9,
+  "totalPlayers": 10,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -15,7 +15,7 @@
       "ip": "51.91.101.151",
       "port": 10801,
       "name": "SokuLobbies Public Tag Lobby",
-      "online": 5,
+      "online": 6,
       "capacity": 32
     },
     {
@@ -66,6 +66,13 @@
       "name": "[CN 2]/report举报各种问题",
       "online": 0,
       "capacity": 70
+    },
+    {
+      "ip": "46.6.124.37",
+      "port": 57856,
+      "name": "无法获取",
+      "online": 0,
+      "capacity": 0
     }
   ]
 }
