@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-10-22T08:40:49.082956+00:00",
+  "updatedAt": "2026-10-22T08:45:49.517061+00:00",
   "totalRooms": 8,
   "activeRooms": 8,
-  "totalPlayers": 57,
+  "totalPlayers": 62,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -50,7 +50,7 @@
       "ip": "43.136.23.115",
       "port": 6009,
       "name": "[CN 3]好多人啊",
-      "online": 55,
+      "online": 60,
       "capacity": 120
     },
     {
