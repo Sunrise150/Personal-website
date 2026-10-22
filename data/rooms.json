@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-10-22T20:50:49.464564+00:00",
+  "updatedAt": "2026-10-22T20:55:47.949170+00:00",
   "totalRooms": 9,
   "activeRooms": 9,
-  "totalPlayers": 8,
+  "totalPlayers": 9,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -15,7 +15,7 @@
       "ip": "51.91.101.151",
       "port": 10801,
       "name": "SokuLobbies Public Tag Lobby",
-      "online": 2,
+      "online": 3,
       "capacity": 32
     },
     {
