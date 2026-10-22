@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-10-22T15:00:49.115965+00:00",
+  "updatedAt": "2026-10-22T15:05:51.569898+00:00",
   "totalRooms": 9,
   "activeRooms": 9,
-  "totalPlayers": 114,
+  "totalPlayers": 119,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -36,21 +36,21 @@
       "ip": "43.136.23.115",
       "port": 6005,
       "name": "[CN 2]/report举报各种问题",
-      "online": 30,
+      "online": 20,
       "capacity": 70
     },
     {
       "ip": "43.136.23.115",
       "port": 6000,
       "name": "[CN 1] WIKI.514.LIVE",
-      "online": 14,
+      "online": 20,
       "capacity": 70
     },
     {
       "ip": "43.136.23.115",
       "port": 6009,
       "name": "[CN 3]好多人啊",
-      "online": 61,
+      "online": 69,
       "capacity": 120
     },
     {
@@ -64,7 +64,7 @@
       "ip": "43.136.23.115",
       "port": 6011,
       "name": "[TEST] Spectator Hub",
-      "online": 4,
+      "online": 5,
       "capacity": 30
     }
   ]
