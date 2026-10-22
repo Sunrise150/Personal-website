@@ -1,14 +1,14 @@
 {
-  "updatedAt": "2026-10-22T15:50:48.530474+00:00",
+  "updatedAt": "2026-10-22T15:55:52.464803+00:00",
   "totalRooms": 9,
   "activeRooms": 9,
-  "totalPlayers": 92,
+  "totalPlayers": 81,
   "rooms": [
     {
       "ip": "51.91.101.151",
       "port": 10802,
       "name": "Clan War Lobby",
-      "online": 1,
+      "online": 0,
       "capacity": 48
     },
     {
@@ -21,8 +21,8 @@
     {
       "ip": "51.91.101.151",
       "port": 10800,
-      "name": "SokuLobbies Public Vanilla Lobby",
-      "online": 0,
+      "name": "SokuLobbies Public Vanilla Lobby \u0001",
+      "online": 1,
       "capacity": 32
     },
     {
@@ -50,7 +50,7 @@
       "ip": "43.136.23.115",
       "port": 6009,
       "name": "[CN 3]好多人啊",
-      "online": 67,
+      "online": 57,
       "capacity": 120
     },
     {
@@ -64,7 +64,7 @@
       "ip": "43.136.23.115",
       "port": 6011,
       "name": "TEST-Spectator-Hub-0764",
-      "online": 2,
+      "online": 1,
       "capacity": 30
     }
   ]
