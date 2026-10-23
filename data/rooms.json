@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-10-23T06:00:49.358789+00:00",
-  "totalRooms": 10,
-  "activeRooms": 9,
+  "updatedAt": "2026-10-23T06:05:48.681340+00:00",
+  "totalRooms": 9,
+  "activeRooms": 8,
   "totalPlayers": 48,
   "rooms": [
     {
@@ -38,13 +38,6 @@
       "name": "Prigranichnoe | Ru",
       "online": 0,
       "capacity": 24
-    },
-    {
-      "ip": "43.136.23.115",
-      "port": 6011,
-      "name": "TEST-Spectator-Hub-0764",
-      "online": 0,
-      "capacity": 30
     },
     {
       "ip": "43.136.23.115",
