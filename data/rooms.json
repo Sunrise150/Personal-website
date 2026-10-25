@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-25T00:10:49.242671+00:00",
+  "updatedAt": "2026-10-25T00:15:50.975465+00:00",
   "totalRooms": 9,
   "activeRooms": 8,
   "totalPlayers": 10,
@@ -62,7 +62,7 @@
     },
     {
       "ip": "150.228.123.81",
-      "port": 57856,
+      "port": 36322,
       "name": "无法获取",
       "online": 0,
       "capacity": 0
