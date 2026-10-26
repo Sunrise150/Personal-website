@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-10-26T09:11:05.305577+00:00",
-  "totalRooms": 8,
-  "activeRooms": 8,
-  "totalPlayers": 46,
+  "updatedAt": "2026-10-26T09:16:09.966775+00:00",
+  "totalRooms": 7,
+  "activeRooms": 7,
+  "totalPlayers": 43,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -36,7 +36,7 @@
       "ip": "43.136.23.115",
       "port": 6003,
       "name": "[CN 2]/report举报各种问题",
-      "online": 44,
+      "online": 41,
       "capacity": 70
     },
     {
@@ -52,13 +52,6 @@
       "name": "[CN 1] WIKI.514.LIVE",
       "online": 2,
       "capacity": 70
-    },
-    {
-      "ip": "94.103.3.82",
-      "port": 10800,
-      "name": "Prigranichnoe | Ru",
-      "online": 0,
-      "capacity": 24
     }
   ]
 }
