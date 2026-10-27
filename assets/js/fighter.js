@@ -19,6 +19,7 @@
   const SCORES_KEY = 'fighter_scores';
   const AUTO_FIRE_KEY = 'fighter_autofire';
   const DIFF_KEY = 'fighter_diff';
+  const PLANE_KEY = 'fighter_plane';
 
   let best = parseInt(localStorage.getItem(BEST_KEY) || '0', 10);
   $best.textContent = best;
@@ -36,6 +37,7 @@
   let running = false, paused = false, gameOver = false, lastTime = 0, slowMo = false;
   let keys = {}, joyX = 0, joyY = 0, fireHeld = false;
   let autoFire = localStorage.getItem(AUTO_FIRE_KEY) === '1';
+  let godMode = false; // 无敌模式
 
   // 实体
   let player = null;
@@ -48,7 +50,15 @@
   let currentScore = 0, currentWave = 0;
 
   // Buff 系统
-  let buffs = { shield: 0, power: 0, laser: 0 };
+  let buffs = { shield: 0, power: 0, laser: 0, freeze: 0 };
+
+  // 主动道具系统（库存）
+  const ACTIVE_NAMES = { bomb: '💣 炸弹', freeze: '❄️ 冻结', beam: '⚡ 光束' };
+  let activeItems = { bomb: 0, freeze: 0, beam: 0 };
+  let activeCooldown = { bomb: 0, freeze: 0, beam: 0 };
+
+  // 双飞机系统
+  let planeType = localStorage.getItem(PLANE_KEY) || 'red'; // 'red' 或 'blue'
 
   // ==== 敌机类型 ====
   const ENEMY_TYPES = {
@@ -58,7 +68,13 @@
     scout:    { w: 20, h: 26, hp: 1, speed: 160, score: 150, color: '#06b6d4', shootMode: 'dive' },
     tank:     { w: 50, h: 50, hp: 12, speed: 30, score: 800, color: '#65a30d', shootMode: 'spread' },
     gunship:  { w: 38, h: 30, hp: 5, speed: 45,  score: 500, color: '#ec4899', shootMode: 'spiral' },
-    laser:    { w: 36, h: 40, hp: 4, speed: 35, score: 700, color: '#06d6a0', shootMode: 'laser' }, // 新增：激光敌人
+    laser:    { w: 36, h: 40, hp: 4, speed: 35, score: 700, color: '#06d6a0', shootMode: 'laser' },
+    // 新增敌人类型
+    drone:    { w: 18, h: 18, hp: 1, speed: 200, score: 120, color: '#facc15', shootMode: 'none', isDrone: true }, // 小型快速无人机，不射击但会撞玩家
+    splitter: { w: 36, h: 36, hp: 4, speed: 35, score: 500, color: '#8b5cf6', shootMode: 'none', isSplitter: true }, // 死亡后分裂成 3 个小型
+    healer:   { w: 30, h: 30, hp: 3, speed: 40, score: 600, color: '#10b981', shootMode: 'none', isHealer: true }, // 治疗周围敌人
+    shielder: { w: 40, h: 40, hp: 8, speed: 25, score: 900, color: '#0ea5e9', shootMode: 'shield', isShielder: true }, // 给周围敌人加盾
+    bomber:   { w: 28, h: 28, hp: 2, speed: 90, score: 400, color: '#dc2626', shootMode: 'none', isBomber: true }, // 自爆敌人
     ghost:    { w: 34, h: 34, hp: 999, speed: 50, score: 2000, color: '#a1a1aa', shootMode: 'ghost', isGhost: true, lifeTime: 30 },
     boss:     { w: 100, h: 70, hp: 80, speed: 30, score: 5000, color: '#dc2626', shootMode: 'boss' }
   };
@@ -75,7 +91,9 @@
       moveTimer: 0, vx: 0,
       phase: 0, spiralAng: 0,
       ghostTimer: t.isGhost ? t.lifeTime : 0,
-      notHitTime: t.isGhost ? 0 : 0
+      notHitTime: t.isGhost ? 0 : 0,
+      healTimer: t.isHealer ? 3 : 0,
+      hasShield: false
     };
     enemies.push(e);
   }
@@ -155,6 +173,22 @@
         const baseAng = Math.atan2(dy, dx);
         enemyBullets.push({ x: e.x, y: e.y + e.h / 2, vx: Math.cos(baseAng + 0.2) * 280 * bMul, vy: Math.sin(baseAng + 0.2) * 280 * bMul, r: 3 });
         enemyBullets.push({ x: e.x, y: e.y + e.h / 2, vx: Math.cos(baseAng - 0.2) * 280 * bMul, vy: Math.sin(baseAng - 0.2) * 280 * bMul, r: 3 });
+        break;
+      }
+      case 'shield': {
+        // shielder 周期性给周围敌人加盾（不直接射子弹）
+        for (const o of enemies) {
+          if (o === e || o.hasShield || o.isGhost || o.hp <= 0) continue;
+          const dd = Math.hypot(o.x - e.x, o.y - e.y);
+          if (dd < 130) {
+            o.hasShield = true;
+            // 视觉：粒子环 + 加盾特效
+            for (let i = 0; i < 8; i++) {
+              const ang = (i / 8) * Math.PI * 2;
+              particles.push({ x: e.x, y: e.y, vx: Math.cos(ang) * 100, vy: Math.sin(ang) * 100, life: 0.5, maxLife: 0.5, size: 2, color: '#0ea5e9' });
+            }
+          }
+        }
         break;
       }
       case 'ghost': {
@@ -286,19 +320,39 @@
     if (buffs.shield > 0) arr.push(`<span class="ft-buff shield">🛡 护盾 ${buffs.shield.toFixed(1)}s</span>`);
     if (buffs.power > 0) arr.push(`<span class="ft-buff power">⚡ 火力 ${buffs.power.toFixed(1)}s</span>`);
     if (buffs.laser > 0) arr.push(`<span class="ft-buff laser">💫 激光 ${buffs.laser.toFixed(1)}s</span>`);
+    if (buffs.freeze > 0) arr.push(`<span class="ft-buff" style="background:rgba(125,211,252,0.2);color:#7dd3fc;border-color:#7dd3fc;">❄️ 冻结 ${buffs.freeze.toFixed(1)}s</span>`);
     $buffs.innerHTML = arr.join('');
   }
 
   function spawnPowerup(x, y) {
     if (Math.random() > 0.08) return; // 8% 掉落率，一波约 1-2 个
-    const types = ['shield', 'power', 'laser', 'life'];
-    const weights = [0.35, 0.30, 0.20, 0.15];
-    let r = Math.random(), t = 'shield';
-    for (let i = 0; i < types.length; i++) { if (r < weights[i]) { t = types[i]; break; } r -= weights[i]; }
-    powerups.push({ x, y, vy: 80, type: t, r: 10 });
+    // 25% 几率为主动道具
+    const isActive = Math.random() < 0.25;
+    if (isActive) {
+      const types = ['bomb', 'freeze', 'beam'];
+      const t = types[Math.floor(Math.random() * 3)];
+      powerups.push({ x, y, vy: 80, type: t, r: 10, active: true });
+    } else {
+      const types = ['shield', 'power', 'laser', 'life'];
+      const weights = [0.35, 0.30, 0.20, 0.15];
+      let r = Math.random(), t = 'shield';
+      for (let i = 0; i < types.length; i++) { if (r < weights[i]) { t = types[i]; break; } r -= weights[i]; }
+      powerups.push({ x, y, vy: 80, type: t, r: 10 });
+    }
   }
 
   function applyPowerup(type) {
+    if (type === 'bomb' || type === 'freeze' || type === 'beam') {
+      // 主动道具存入库存（上限 3）
+      if (activeItems[type] < 3) {
+        activeItems[type]++;
+        showToast(`${ACTIVE_NAMES[type]} +1 (库存 ${activeItems[type]})`);
+      } else {
+        showToast(`${ACTIVE_NAMES[type]} 已满 3 个`);
+      }
+      updateActiveUI();
+      return;
+    }
     switch (type) {
       case 'shield': buffs.shield = 8; showToast('🛡 获得护盾！持续 8 秒'); break;
       case 'power':  buffs.power = 8; showToast('⚡ 火力强化 8 秒！'); break;
@@ -308,29 +362,116 @@
     updateBuffsUI();
   }
 
+  // 主动道具 UI 更新
+  function updateActiveUI() {
+    const $bomb = document.getElementById('ft-active-bomb');
+    const $freeze = document.getElementById('ft-active-freeze');
+    const $beam = document.getElementById('ft-active-beam');
+    if (!$bomb) return;
+    $bomb.textContent = `💣 ${activeItems.bomb}`;
+    $freeze.textContent = `❄️ ${activeItems.freeze}`;
+    $beam.textContent = `⚡ ${activeItems.beam}`;
+    $bomb.disabled = activeItems.bomb <= 0 || activeCooldown.bomb > 0;
+    $freeze.disabled = activeItems.freeze <= 0 || activeCooldown.freeze > 0;
+    $beam.disabled = activeItems.beam <= 0 || activeCooldown.beam > 0;
+  }
+
+  // 使用主动道具
+  function useActive(type) {
+    if (!running || gameOver) return;
+    if (activeItems[type] <= 0) { showToast(`${ACTIVE_NAMES[type]} 库存为空`); return; }
+    if (activeCooldown[type] > 0) { showToast(`${ACTIVE_NAMES[type]} 冷却中`); return; }
+    activeItems[type]--;
+    activeCooldown[type] = 1.5; // 1.5 秒冷却防滥用
+    switch (type) {
+      case 'bomb': {
+        // 炸弹：清屏 + 短暂无敌
+        shockwave();
+        player.invincible = Math.max(player.invincible, 1.5);
+        showToast('💣 炸弹清屏！');
+        break;
+      }
+      case 'freeze': {
+        // 时间冻结：敌机子弹减速 5 秒
+        buffs.freeze = 5;
+        showToast('❄️ 时间冻结 5 秒！');
+        break;
+      }
+      case 'beam': {
+        // 全屏光束：对所有敌人造成 5 伤害
+        for (const e of enemies) {
+          if (e.isGhost) continue;
+          if (e.hasShield) { e.hasShield = false; continue; }
+          e.hp -= 5;
+          if (e.hp <= 0) {
+            score += e.score;
+            explode(e.x, e.y, e.color, 15);
+            spawnPowerup(e.x, e.y);
+          }
+        }
+        // 移除死亡敌人
+        enemies = enemies.filter(e => e.hp > 0);
+        // 视觉：纵向激光柱
+        for (let i = 0; i < 20; i++) {
+          particles.push({ x: Math.random() * W, y: player.y, vx: 0, vy: -1200, life: 0.4, maxLife: 0.4, size: 4, color: '#fbbf24' });
+        }
+        showToast('⚡ 全屏光束！');
+        break;
+      }
+    }
+    updateActiveUI();
+  }
+
   // ==== 玩家射击 ====
   function playerShoot() {
     if (player.cooldown > 0) return;
     const hasLaser = buffs.laser > 0, hasPower = buffs.power > 0;
-    player.cooldown = hasLaser ? 0.06 : (hasPower ? 0.09 : 0.12);
-    const speedMul = hasPower ? 1.2 : 1;
 
-    if (hasLaser) {
-      // 激光：单发穿透
-      bullets.push({ x: player.x, y: player.y - 18, w: 4, h: 30, vy: -800 * speedMul, pierce: true, color: '#ec4899' });
-      bullets.push({ x: player.x - 10, y: player.y - 10, w: 2, h: 10, vy: -600 * speedMul, vx: -80 });
-      bullets.push({ x: player.x + 10, y: player.y - 10, w: 2, h: 10, vy: -600 * speedMul, vx: 80 });
-    } else if (score >= 5000 || hasPower) {
-      bullets.push({ x: player.x - 12, y: player.y - 10, w: 3, h: 10, vy: -520 * speedMul, vx: -40 });
-      bullets.push({ x: player.x + 12, y: player.y - 10, w: 3, h: 10, vy: -520 * speedMul, vx: 40 });
-      bullets.push({ x: player.x, y: player.y - 14, w: 3, h: 10, vy: -560 * speedMul });
-      bullets.push({ x: player.x, y: player.y - 20, w: 5, h: 5, vy: -500 * speedMul, homing: true });
-    } else if (score >= 2000) {
-      bullets.push({ x: player.x - 8, y: player.y - 12, w: 3, h: 10, vy: -520 * speedMul });
-      bullets.push({ x: player.x, y: player.y - 14, w: 3, h: 10, vy: -560 * speedMul });
-      bullets.push({ x: player.x + 8, y: player.y - 12, w: 3, h: 10, vy: -520 * speedMul });
+    if (planeType === 'red') {
+      // ==== 红鹰：散射型进化路线（覆盖广、单发弱）—— 削弱后 ====
+      // cooldown 加长，火力档从 5+2=7 发 → 3 发扇形
+      player.cooldown = hasLaser ? 0.10 : (hasPower ? 0.13 : 0.16);
+      const speedMul = hasPower ? 1.1 : 1;
+      const baseColor = '#ef4444';
+      if (hasLaser) {
+        // 红鹰激光：宽激光柱（去掉侧弹，避免过强）
+        bullets.push({ x: player.x, y: player.y - 18, w: 10, h: 36, vy: -600 * speedMul, pierce: true, color: '#f97316' });
+      } else if (score >= 5000 || hasPower) {
+        // 5 发扇形
+        for (let i = -2; i <= 2; i++) {
+          bullets.push({ x: player.x, y: player.y - 14, w: 3, h: 10, vy: -500 * speedMul, vx: i * 70, color: baseColor });
+        }
+      } else if (score >= 2000) {
+        // 2 发扇形
+        bullets.push({ x: player.x - 6, y: player.y - 12, w: 3, h: 10, vy: -500 * speedMul, vx: -70, color: baseColor });
+        bullets.push({ x: player.x + 6, y: player.y - 12, w: 3, h: 10, vy: -500 * speedMul, vx: 70, color: baseColor });
+      } else {
+        // 1 发基础
+        bullets.push({ x: player.x, y: player.y - 14, w: 4, h: 12, vy: -540 * speedMul, color: baseColor });
+      }
     } else {
-      bullets.push({ x: player.x, y: player.y - 14, w: 3, h: 10, vy: -560 * speedMul });
+      // ==== 蓝鲨：穿透型进化路线（单发强、贯穿敌阵）—— 增强后 ====
+      // cooldown 缩短，基础即双发穿透
+      player.cooldown = hasLaser ? 0.06 : (hasPower ? 0.09 : 0.12);
+      const speedMul = hasPower ? 1.2 : 1;
+      const baseColor = '#60a5fa';
+      if (hasLaser || score >= 5000 || hasPower) {
+        // 中央穿透激光 + 2 侧追踪弹 + 1 副穿透
+        bullets.push({ x: player.x, y: player.y - 18, w: 4, h: 35, vy: -820 * speedMul, pierce: true, color: '#93c5fd' });
+        bullets.push({ x: player.x - 12, y: player.y - 10, w: 3, h: 10, vy: -500 * speedMul, vx: -40, homing: true, color: baseColor });
+        bullets.push({ x: player.x + 12, y: player.y - 10, w: 3, h: 10, vy: -500 * speedMul, vx: 40, homing: true, color: baseColor });
+        bullets.push({ x: player.x - 4, y: player.y - 14, w: 3, h: 12, vy: -620 * speedMul, pierce: true, color: baseColor });
+      } else if (score >= 2000) {
+        // 3 发穿透 + 1 副
+        bullets.push({ x: player.x - 8, y: player.y - 12, w: 3, h: 12, vy: -600 * speedMul, pierce: true, color: baseColor });
+        bullets.push({ x: player.x, y: player.y - 14, w: 4, h: 14, vy: -640 * speedMul, pierce: true, color: baseColor });
+        bullets.push({ x: player.x + 8, y: player.y - 12, w: 3, h: 12, vy: -600 * speedMul, pierce: true, color: baseColor });
+        bullets.push({ x: player.x, y: player.y - 18, w: 3, h: 10, vy: -560 * speedMul, pierce: true, color: '#bfdbfe' });
+      } else {
+        // 2 发穿透（基础增强）
+        bullets.push({ x: player.x - 5, y: player.y - 14, w: 4, h: 14, vy: -600 * speedMul, pierce: true, color: baseColor });
+        bullets.push({ x: player.x + 5, y: player.y - 14, w: 4, h: 14, vy: -600 * speedMul, pierce: true, color: baseColor });
+      }
     }
   }
 
@@ -366,6 +507,12 @@
     if (buffs.shield > 0) buffs.shield = Math.max(0, buffs.shield - dt);
     if (buffs.power > 0) buffs.power = Math.max(0, buffs.power - dt);
     if (buffs.laser > 0) buffs.laser = Math.max(0, buffs.laser - dt);
+    if (buffs.freeze > 0) buffs.freeze = Math.max(0, buffs.freeze - dt);
+    // 主动道具冷却
+    if (activeCooldown.bomb > 0) activeCooldown.bomb = Math.max(0, activeCooldown.bomb - dt);
+    if (activeCooldown.freeze > 0) activeCooldown.freeze = Math.max(0, activeCooldown.freeze - dt);
+    if (activeCooldown.beam > 0) activeCooldown.beam = Math.max(0, activeCooldown.beam - dt);
+    if (Math.floor(activeCooldown.bomb * 10) === 0 || Math.floor(activeCooldown.freeze * 10) === 0 || Math.floor(activeCooldown.beam * 10) === 0) updateActiveUI();
     updateBuffsUI();
 
     // 背景
@@ -378,20 +525,26 @@
       spawnTimer = Math.max(0.25, (1.2 - wave * 0.07) / diffCfg.spawnMul);
       const roll = Math.random();
       let type = 'small';
-      if (wave >= 5 && roll < 0.1) type = 'tank';
-      else if (wave >= 4 && roll < 0.25) type = 'gunship';
-      else if (wave >= 4 && roll < 0.35) type = 'laser'; // 新增：激光敌人
-      else if (wave >= 3 && roll < 0.5) type = 'scout';
-      else if (wave >= 3 && roll < 0.65) type = 'large';
-      else if (wave >= 2 && roll < 0.8) type = 'medium';
+      // 新敌人优先级判断（高波次解锁）
+      if (wave >= 7 && roll < 0.06) type = 'shielder';
+      else if (wave >= 6 && roll < 0.13) type = 'healer';
+      else if (wave >= 5 && roll < 0.21) type = 'splitter';
+      else if (wave >= 5 && roll < 0.29) type = 'bomber';
+      else if (wave >= 4 && roll < 0.40) type = 'drone';
+      else if (wave >= 5 && roll < 0.50) type = 'tank';
+      else if (wave >= 4 && roll < 0.62) type = 'gunship';
+      else if (wave >= 4 && roll < 0.72) type = 'laser';
+      else if (wave >= 3 && roll < 0.82) type = 'scout';
+      else if (wave >= 3 && roll < 0.92) type = 'large';
+      else if (wave >= 2 && roll < 0.97) type = 'medium';
       spawnEnemy(type);
       waveSpawned++;
     }
 
     // 波次普通敌人清完 → 决定下一个阶段
     if (!ghostSpawned && !bossSpawned && waveSpawned >= waveTotal && enemies.length === 0) {
-      // 每 4 波：幽灵首领
-      if (wave % 4 === 0) {
+      // 每 10 波：幽灵首领
+      if (wave % 10 === 0) {
         spawnGhost();
       }
       // 每 2 波（除了幽灵波）：Boss
@@ -482,6 +635,46 @@
           // y 小幅浮动
           e.y = 100 + Math.sin(e.moveTimer * 2) * 10;
         }
+      } else if (e.type === 'drone') {
+        // 无人机：高速冲撞玩家
+        const dx = player.x - e.x, dy = player.y - e.y;
+        const d = Math.hypot(dx, dy) || 1;
+        e.x += dx / d * e.speed * eSpeed * dt;
+        e.y += dy / d * e.speed * eSpeed * dt;
+      } else if (e.type === 'splitter') {
+        // 分裂者：缓慢下降，左右徘徊
+        e.moveTimer += dt;
+        e.x += Math.sin(e.moveTimer * 1.5) * 60 * dt;
+        e.y += e.speed * eSpeed * dt;
+      } else if (e.type === 'healer') {
+        // 治疗者：悬浮在中部
+        if (e.y < 120) {
+          e.y += e.speed * eSpeed * dt;
+        } else {
+          e.moveTimer += dt;
+          e.x += Math.sin(e.moveTimer * 1.2) * 50 * dt;
+          e.y = 120 + Math.sin(e.moveTimer * 2) * 15;
+        }
+      } else if (e.type === 'shielder') {
+        // 加盾者：缓慢下降，悬浮在上部
+        if (e.y < 90) {
+          e.y += e.speed * eSpeed * dt;
+        } else {
+          e.moveTimer += dt;
+          e.x += Math.sin(e.moveTimer * 0.8) * 40 * dt;
+          e.y = 90 + Math.sin(e.moveTimer * 1.5) * 10;
+        }
+      } else if (e.type === 'bomber') {
+        // 自爆者：高速冲向玩家，接近时自爆
+        const dx = player.x - e.x, dy = player.y - e.y;
+        const d = Math.hypot(dx, dy) || 1;
+        e.x += dx / d * e.speed * eSpeed * dt;
+        e.y += dy / d * e.speed * eSpeed * dt;
+        // 接近玩家自爆（直接置 hp=0，由击杀处统一处理）
+        if (d < 40) {
+          e.hp = 0;
+          e._selfDestruct = true;
+        }
       } else {
         e.y += e.speed * eSpeed * dt;
         e.moveTimer += dt;
@@ -501,14 +694,37 @@
         else if (e.type === 'large') e.shootTimer = 1.8;
         else if (e.type === 'medium') e.shootTimer = 2.2;
         else if (e.type === 'scout') e.shootTimer = 1.5;
+        else if (e.type === 'shielder') e.shootTimer = 4; // 每 4 秒给周围加盾
         else e.shootTimer = 99;
         enemyShoot(e);
+      }
+
+      // 特殊行为：healer 治疗
+      if (e.isHealer) {
+        e.healTimer -= dt;
+        if (e.healTimer <= 0) {
+          e.healTimer = 3;
+          let healed = 0;
+          for (const o of enemies) {
+            if (o === e || o.hp <= 0 || o.hp >= o.maxHp || o.isGhost) continue;
+            const dd = Math.hypot(o.x - e.x, o.y - e.y);
+            if (dd < 110) { o.hp = Math.min(o.maxHp, o.hp + 2); healed++; }
+          }
+          if (healed > 0) {
+            // 视觉：绿色光环
+            for (let i = 0; i < 10; i++) {
+              const ang = (i / 10) * Math.PI * 2;
+              particles.push({ x: e.x, y: e.y, vx: Math.cos(ang) * 100, vy: Math.sin(ang) * 100, life: 0.5, maxLife: 0.5, size: 3, color: '#10b981' });
+            }
+          }
+        }
       }
     }
     enemies = enemies.filter(e => e.y < H + 80 && e.hp > 0);
 
-    // 敌机子弹
-    for (const b of enemyBullets) { b.x += b.vx * dt; b.y += b.vy * dt; }
+    // 敌机子弹（冻结时减速）
+    const bulletSpeedMul = buffs.freeze > 0 ? 0.2 : 1;
+    for (const b of enemyBullets) { b.x += b.vx * dt * bulletSpeedMul; b.y += b.vy * dt * bulletSpeedMul; }
     enemyBullets = enemyBullets.filter(b => b.y < H + 20 && b.y > -20 && b.x > -20 && b.x < W + 20);
 
     // 粒子
@@ -528,12 +744,35 @@
           if (e.isGhost) {
             // 幽灵：不受伤害，也不重置倒计时
             explode(b.x, b.y, '#a1a1aa', 3);
+          } else if (e.hasShield) {
+            // 有盾：破盾不扣血
+            e.hasShield = false;
+            explode(b.x, b.y, '#0ea5e9', 6);
           } else {
             e.hp--;
             explode(b.x, b.y, b.color || '#fef08a', 4);
             if (e.hp <= 0) {
               score += e.score;
               explode(e.x, e.y, e.color, e.type === 'boss' ? 40 : (e.type === 'tank' || e.type === 'gunship' ? 20 : 12));
+              // splitter 死亡分裂成 3 个 small
+              if (e.isSplitter) {
+                for (let i = 0; i < 3; i++) {
+                  const ang = (i / 3) * Math.PI * 2;
+                  spawnEnemy('small');
+                  const ne = enemies[enemies.length - 1];
+                  ne.x = e.x + Math.cos(ang) * 15;
+                  ne.y = e.y + Math.sin(ang) * 15;
+                  ne.vx = Math.cos(ang) * 80;
+                }
+              }
+              // bomber 死亡自爆：环形弹幕
+              if (e.isBomber) {
+                for (let i = 0; i < 12; i++) {
+                  const ang = (i / 12) * Math.PI * 2;
+                  enemyBullets.push({ x: e.x, y: e.y, vx: Math.cos(ang) * 220 * diffCfg.bulletMul, vy: Math.sin(ang) * 220 * diffCfg.bulletMul, r: 4 });
+                }
+                explode(e.x, e.y, '#dc2626', 25);
+              }
               // 掉落道具
               spawnPowerup(e.x, e.y);
             }
@@ -556,7 +795,10 @@
     if (player.invincible <= 0) {
       for (const e of enemies) {
         if (e.hp <= 0 || e.isGhost) continue;
-        if (rectHit(player, e)) { hitPlayer(); e.hp = 0; explode(e.x, e.y, e.color, 15); break; }
+        if (rectHit(player, e)) {
+          if (e.hasShield) { e.hasShield = false; explode(e.x, e.y, '#0ea5e9', 8); continue; }
+          hitPlayer(); e.hp = 0; explode(e.x, e.y, e.color, 15); break;
+        }
       }
     }
 
@@ -573,6 +815,8 @@
   }
 
   function hitPlayer() {
+    // 无敌模式：不受伤
+    if (godMode) return;
     if (buffs.shield > 0) {
       // 护盾：每次被击中扣 2 秒持续时间
       buffs.shield = Math.max(0, buffs.shield - 2); updateBuffsUI();
@@ -640,11 +884,14 @@
     player = { x: W / 2, y: H - 60, w: 28, h: 28, invincible: 0, cooldown: 0 };
     bullets = []; enemyBullets = []; enemies = []; particles = []; powerups = [];
     score = 0; lives = diffCfg.lives; wave = 1; spawnTimer = 0; waveSpawned = 0; bossSpawned = false; ghostSpawned = false;
-    buffs = { shield: 0, power: 0, laser: 0 };
+    buffs = { shield: 0, power: 0, laser: 0, freeze: 0 };
+    activeItems = { bomb: 0, freeze: 0, beam: 0 };
+    activeCooldown = { bomb: 0, freeze: 0, beam: 0 };
     gameOver = false; paused = false;
     $score.textContent = 0; $lives.textContent = lives; $wave.textContent = 1;
     $gameover.classList.remove('show');
     updateBuffsUI();
+    updateActiveUI();
     initStars(); startWave();
     // 清空输入状态，防止残留按键导致卡死
     keys = {}; joyX = 0; joyY = 0; fireHeld = false; slowMo = false;
@@ -671,10 +918,16 @@
     for (const p of powerups) {
       const pulse = 1 + Math.sin(Date.now() / 150) * 0.15;
       ctx.save(); ctx.translate(p.x, p.y); ctx.scale(pulse, pulse);
-      const colors = { shield: '#22c55e', power: '#fbbf24', laser: '#ec4899', life: '#ef4444' };
-      const icons = { shield: '🛡', power: '⚡', laser: '💫', life: '❤️' };
+      const colors = { shield: '#22c55e', power: '#fbbf24', laser: '#ec4899', life: '#ef4444', bomb: '#dc2626', freeze: '#7dd3fc', beam: '#fbbf24' };
+      const icons = { shield: '🛡', power: '⚡', laser: '💫', life: '❤️', bomb: '💣', freeze: '❄️', beam: '✨' };
       ctx.fillStyle = colors[p.type] || '#fff';
       ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.fill();
+      // 主动道具外圈高亮
+      if (p.active) {
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.globalAlpha = 0.6;
+        ctx.beginPath(); ctx.arc(0, 0, p.r + 3, 0, Math.PI * 2); ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
       ctx.fillStyle = '#fff'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(icons[p.type] || '?', 0, 1);
       ctx.restore();
@@ -723,10 +976,22 @@
   function drawPlayer() {
     if (player.invincible > 0 && Math.floor(player.invincible * 10) % 2 === 0) return;
     ctx.save(); ctx.translate(player.x, player.y);
-    ctx.fillStyle = buffs.laser > 0 ? '#ec4899' : (buffs.power > 0 ? '#fbbf24' : '#60a5fa');
+    // 双飞机配色：红鹰=红，蓝鲨=蓝，激光/火力时变色
+    const baseColor = planeType === 'red' ? '#ef4444' : '#60a5fa';
+    const laserColor = planeType === 'red' ? '#f97316' : '#ec4899';
+    const flameColor = planeType === 'red' ? '#fb923c' : '#93c5fd';
+    ctx.fillStyle = buffs.laser > 0 ? laserColor : (buffs.power > 0 ? '#fbbf24' : baseColor);
     ctx.beginPath(); ctx.moveTo(0, -14); ctx.lineTo(10, 10); ctx.lineTo(0, 5); ctx.lineTo(-10, 10); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#fb923c';
+    ctx.fillStyle = flameColor;
     ctx.beginPath(); ctx.moveTo(-4, 8); ctx.lineTo(0, 16 + Math.random() * 4); ctx.lineTo(4, 8); ctx.closePath(); ctx.fill();
+    // 蓝鲨：底部加一道横线表示激光充能
+    if (planeType === 'blue') {
+      ctx.fillStyle = '#1e40af'; ctx.fillRect(-8, 6, 16, 2);
+    }
+    // 红鹰：两侧加机翼色块
+    if (planeType === 'red') {
+      ctx.fillStyle = '#7f1d1d'; ctx.fillRect(-10, 4, 3, 6); ctx.fillRect(7, 4, 3, 6);
+    }
     ctx.restore();
   }
 
@@ -760,10 +1025,48 @@
       ctx.beginPath(); ctx.arc(0, 0, e.w / 2, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = '#fbcfe8'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.ellipse(0, -e.h / 2 - 2, e.w / 2 + 4, 2, 0, 0, Math.PI * 2); ctx.stroke();
+    } else if (e.type === 'drone') {
+      // 无人机：小三角形 + 旋转
+      ctx.rotate(Date.now() / 200);
+      ctx.beginPath(); ctx.moveTo(0, -e.h / 2); ctx.lineTo(e.w / 2, 0); ctx.lineTo(0, e.h / 2); ctx.lineTo(-e.w / 2, 0); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#854d0e'; ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill();
+    } else if (e.type === 'splitter') {
+      // 分裂者：紫色六边形
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = i * Math.PI / 3;
+        const x = Math.cos(a) * e.w / 2, y = Math.sin(a) * e.h / 2;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#c4b5fd'; ctx.lineWidth = 2; ctx.stroke();
+    } else if (e.type === 'healer') {
+      // 治疗者：绿色十字
+      ctx.beginPath(); ctx.arc(0, 0, e.w / 2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#064e3b'; ctx.fillRect(-3, -e.h / 2 + 4, 6, e.h - 8);
+      ctx.fillRect(-e.w / 2 + 4, -3, e.w - 8, 6);
+    } else if (e.type === 'shielder') {
+      // 加盾者：蓝色方形 + 周围环
+      ctx.fillRect(-e.w / 2, -e.h / 2, e.w, e.h);
+      ctx.strokeStyle = '#7dd3fc'; ctx.lineWidth = 2;
+      ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 200) * 0.3;
+      ctx.beginPath(); ctx.arc(0, 0, e.w / 2 + 8, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = 1;
+    } else if (e.type === 'bomber') {
+      // 自爆者：红色圆 + 闪烁
+      ctx.beginPath(); ctx.arc(0, 0, e.w / 2, 0, Math.PI * 2); ctx.fill();
+      const blink = Math.floor(Date.now() / 100) % 2;
+      if (blink) { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill(); }
     } else {
       ctx.beginPath(); ctx.moveTo(0, e.h / 2); ctx.lineTo(e.w / 2, -e.h / 2); ctx.lineTo(0, -e.h / 4); ctx.lineTo(-e.w / 2, -e.h / 2); ctx.closePath(); ctx.fill();
     }
-    if (e.type !== 'small' && e.hp < e.maxHp) {
+    // 有盾牌：蓝色环
+    if (e.hasShield) {
+      ctx.strokeStyle = '#0ea5e9'; ctx.lineWidth = 2; ctx.globalAlpha = 0.8;
+      ctx.beginPath(); ctx.arc(0, 0, Math.max(e.w, e.h) / 2 + 5, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    if (e.type !== 'small' && e.type !== 'drone' && e.hp < e.maxHp) {
       const pct = e.hp / e.maxHp;
       ctx.fillStyle = '#292524'; ctx.fillRect(-e.w / 2, -e.h / 2 - 6, e.w, 3);
       ctx.fillStyle = '#22c55e'; ctx.fillRect(-e.w / 2, -e.h / 2 - 6, e.w * pct, 3);
@@ -834,13 +1137,45 @@
   // 初始化难度按钮
   document.querySelector(`.ft-difficulty button[data-diff="${difficulty}"]`).classList.add('active');
 
+  // ==== 飞机选择 ====
+  function selectPlane(type) {
+    planeType = type;
+    localStorage.setItem(PLANE_KEY, type);
+    document.querySelectorAll('.ft-plane-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.plane === type);
+    });
+    if (running) restart();
+    else if (player) draw();
+    showToast(type === 'red' ? '🛩 红鹰（散射路线）' : '🛩 蓝鲨（穿透路线）');
+  }
+  document.querySelectorAll('.ft-plane-btn').forEach(btn => {
+    btn.addEventListener('click', () => selectPlane(btn.dataset.plane));
+  });
+  document.querySelector(`.ft-plane-btn[data-plane="${planeType}"]`).classList.add('active');
+
+  // ==== 主动道具按钮 ====
+  const $bombBtn = document.getElementById('ft-active-bomb');
+  const $freezeBtn = document.getElementById('ft-active-freeze');
+  const $beamBtn = document.getElementById('ft-active-beam');
+  $bombBtn.addEventListener('click', () => useActive('bomb'));
+  $freezeBtn.addEventListener('click', () => useActive('freeze'));
+  $beamBtn.addEventListener('click', () => useActive('beam'));
+
   // ==== 自动射击 ====
   const $autoFire = document.getElementById('ft-auto-fire');
   $autoFire.checked = autoFire;
   $autoFire.addEventListener('change', () => { autoFire = $autoFire.checked; localStorage.setItem(AUTO_FIRE_KEY, autoFire ? '1' : '0'); });
 
+  // 无敌模式
+  const $godMode = document.getElementById('ft-god-mode');
+  $godMode.addEventListener('change', () => {
+    godMode = $godMode.checked;
+    if (godMode) showToast('👑 无敌模式已开启！');
+    else showToast('无敌模式已关闭');
+  });
+
   // ==== 输入（极简版，排除一切干扰）====
-  const GAME_KEYS = ['arrowup','arrowdown','arrowleft','arrowright',' ','w','a','s','d','p','shift'];
+  const GAME_KEYS = ['arrowup','arrowdown','arrowleft','arrowright',' ','w','a','s','d','p','shift','1','2','3'];
 
   document.addEventListener('keydown', (e) => {
     const k = e.key.toLowerCase();
@@ -849,6 +1184,10 @@
     if (GAME_KEYS.includes(k)) e.preventDefault();
     if (k === 'p' && running) pause();
     if (k === 'shift') slowMo = true;
+    // 主动道具快捷键
+    if (k === '1') useActive('bomb');
+    if (k === '2') useActive('freeze');
+    if (k === '3') useActive('beam');
   });
   document.addEventListener('keyup', (e) => {
     const k = e.key.toLowerCase();

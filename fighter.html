@@ -30,12 +30,27 @@
     .ft-btn.secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
     .ft-gameover { margin-top: 8px; padding: 8px 16px; background: #ef4444; color: #fff; border-radius: 8px; font-weight: 700; display: none; }
     .ft-gameover.show { display: inline-block; }
+    /* 飞机选择 */
+    .ft-plane-select { display: flex; justify-content: center; gap: 8px; margin-bottom: 8px; }
+    .ft-plane-btn { padding: 6px 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+    .ft-plane-btn.active { border-color: var(--accent); background: rgba(255,255,255,0.08); }
+    .ft-plane-swatch { width: 14px; height: 14px; border-radius: 2px; display: inline-block; }
+    /* 主动道具按钮 */
+    .ft-active { display: flex; justify-content: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+    .ft-active-btn { padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 12px; cursor: pointer; min-width: 56px; }
+    .ft-active-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .ft-active-btn.bomb { border-color: #dc2626; color: #f87171; }
+    .ft-active-btn.bomb:not(:disabled):hover { background: rgba(220,38,38,0.2); }
+    .ft-active-btn.freeze { border-color: #7dd3fc; color: #7dd3fc; }
+    .ft-active-btn.freeze:not(:disabled):hover { background: rgba(125,211,252,0.2); }
+    .ft-active-btn.beam { border-color: #fbbf24; color: #fbbf24; }
+    .ft-active-btn.beam:not(:disabled):hover { background: rgba(251,191,36,0.2); }
     .ft-mobile { display: none; justify-content: space-between; align-items: flex-end; margin-top: 8px; padding: 0 16px; }
     .ft-joystick { width: 100px; height: 100px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); position: relative; touch-action: none; }
     .ft-joystick-knob { width: 40px; height: 40px; border-radius: 50%; background: rgba(96, 165, 250, 0.7); position: absolute; top: 30px; left: 30px; pointer-events: none; }
-    .ft-fire-btn { width: 80px; height: 80px; border-radius: 50%; background: rgba(239, 68, 68, 0.7); border: 2px solid rgba(255,255,255,0.3); color: #fff; font-size: 14px; font-weight: 700; touch-action: none; user-select: none; -webkit-user-select: none; }
+    .ft-fire-btn { width: 56px; height: 56px; border-radius: 50%; background: rgba(239, 68, 68, 0.7); border: 2px solid rgba(255,255,255,0.3); color: #fff; font-size: 12px; font-weight: 700; touch-action: none; user-select: none; -webkit-user-select: none; }
     .ft-fire-btn:active { background: rgba(239, 68, 68, 1); }
-    .ft-slow-btn { width: 64px; height: 64px; border-radius: 50%; background: rgba(96, 165, 250, 0.7); border: 2px solid rgba(255,255,255,0.3); color: #fff; font-size: 12px; font-weight: 700; touch-action: none; user-select: none; -webkit-user-select: none; }
+    .ft-slow-btn { width: 88px; height: 88px; border-radius: 50%; background: rgba(96, 165, 250, 0.7); border: 2px solid rgba(255,255,255,0.3); color: #fff; font-size: 14px; font-weight: 700; touch-action: none; user-select: none; -webkit-user-select: none; }
     .ft-slow-btn:active, .ft-slow-btn.active { background: rgba(96, 165, 250, 1); }
     .ft-mobile-options { display: none; justify-content: center; gap: 12px; margin-top: 8px; font-size: 12px; color: var(--text-muted); }
     .ft-mobile-options label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
@@ -75,7 +90,11 @@
   <main class="container">
     <div class="ft-wrap">
       <h1>飞机大战</h1>
-      <p class="ft-hint">WASD/方向键移动，空格射击，Shift 减速+显示判定点。手机端用摇杆+射击按钮。</p>
+      <p class="ft-hint">WASD/方向键移动，空格射击，Shift 减速+显示判定点。手机端用摇杆+射击按钮。键 1/2/3 触发主动道具。</p>
+      <div class="ft-plane-select">
+        <button class="ft-plane-btn" data-plane="red" type="button"><span class="ft-plane-swatch" style="background:#ef4444"></span>红鹰（散射）</button>
+        <button class="ft-plane-btn" data-plane="blue" type="button"><span class="ft-plane-swatch" style="background:#60a5fa"></span>蓝鲨（穿透）</button>
+      </div>
       <div class="ft-difficulty">
         <button data-diff="easy" class="active">简单</button>
         <button data-diff="normal">普通</button>
@@ -95,15 +114,21 @@
         <button id="ft-pause" class="ft-btn secondary">暂停</button>
         <button id="ft-restart" class="ft-btn secondary">重新开始</button>
       </div>
+      <div class="ft-active">
+        <button class="ft-active-btn bomb" id="ft-active-bomb" type="button">💣 0</button>
+        <button class="ft-active-btn freeze" id="ft-active-freeze" type="button">❄️ 0</button>
+        <button class="ft-active-btn beam" id="ft-active-beam" type="button">⚡ 0</button>
+      </div>
       <div class="ft-mobile-options">
         <label><input type="checkbox" id="ft-auto-fire"> 自动射击</label>
+        <label><input type="checkbox" id="ft-god-mode"> 无敌模式</label>
       </div>
       <div class="ft-mobile">
         <div class="ft-joystick" id="ft-joystick">
           <div class="ft-joystick-knob" id="ft-joystick-knob"></div>
         </div>
         <button class="ft-slow-btn" id="ft-slow-btn">慢速</button>
-        <button class="ft-fire-btn" id="ft-fire-btn">FIRE</button>
+        <button class="ft-fire-btn" id="ft-fire-btn">射击</button>
       </div>
       <div class="ft-scores">
         <h3>🏆 战绩榜 Top 10</h3>
@@ -123,7 +148,7 @@
   <div id="ft-toast" class="ft-toast"></div>
 
   <script src="assets/js/config.js?v=3"></script>
-  <script src="assets/js/fighter.js?v=1006"></script>
+  <script src="assets/js/fighter.js?v=1010"></script>
   <script src="assets/js/player.js?v=14"></script>
 </body>
 </html>
