@@ -437,9 +437,9 @@
         // 红鹰激光：宽激光柱（去掉侧弹，避免过强）
         bullets.push({ x: player.x, y: player.y - 18, w: 10, h: 36, vy: -600 * speedMul, pierce: true, color: '#f97316' });
       } else if (score >= 5000 || hasPower) {
-        // 5 发扇形
-        for (let i = -2; i <= 2; i++) {
-          bullets.push({ x: player.x, y: player.y - 14, w: 3, h: 10, vy: -500 * speedMul, vx: i * 70, color: baseColor });
+        // 4 发扇形
+        for (let i = -1.5; i <= 1.5; i += 1) {
+          bullets.push({ x: player.x, y: player.y - 14, w: 3, h: 10, vy: -500 * speedMul, vx: i * 75, color: baseColor });
         }
       } else if (score >= 2000) {
         // 2 发扇形
