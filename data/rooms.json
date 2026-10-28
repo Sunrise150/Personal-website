@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-10-27T23:56:03.498381+00:00",
-  "totalRooms": 9,
-  "activeRooms": 9,
+  "updatedAt": "2026-10-28T00:01:08.499816+00:00",
+  "totalRooms": 8,
+  "activeRooms": 8,
   "totalPlayers": 5,
   "rooms": [
     {
@@ -59,13 +59,6 @@
       "name": "Ru | Melon lobby",
       "online": 0,
       "capacity": 24
-    },
-    {
-      "ip": "178.174.147.208",
-      "port": 9001,
-      "name": "Touhou Sweden - Weekly Lobbies",
-      "online": 0,
-      "capacity": 15
     }
   ]
 }
