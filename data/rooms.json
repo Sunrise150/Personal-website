@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-10-30T10:16:12.544672+00:00",
+  "updatedAt": "2026-10-30T10:21:12.537469+00:00",
   "totalRooms": 9,
   "activeRooms": 8,
-  "totalPlayers": 61,
+  "totalPlayers": 56,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -21,8 +21,8 @@
     {
       "ip": "51.91.101.151",
       "port": 10800,
-      "name": "SokuLobbies Public Vanilla Lobby \u0003",
-      "online": 3,
+      "name": "SokuLobbies Public Vanilla Lobby \u0002",
+      "online": 2,
       "capacity": 32
     },
     {
@@ -36,7 +36,7 @@
       "ip": "43.136.23.115",
       "port": 6003,
       "name": "[CN 2]/report举报各种问题",
-      "online": 56,
+      "online": 52,
       "capacity": 70
     },
     {
