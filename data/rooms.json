@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-11-02T09:40:54.867762+00:00",
+  "updatedAt": "2026-11-02T09:45:46.244541+00:00",
   "totalRooms": 8,
   "activeRooms": 8,
-  "totalPlayers": 41,
+  "totalPlayers": 40,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -50,7 +50,7 @@
       "ip": "43.136.23.115",
       "port": 6003,
       "name": "[CN 2]/report举报各种问题",
-      "online": 1,
+      "online": 0,
       "capacity": 70
     },
     {
