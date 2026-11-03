@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-11-03T17:00:34.091383+00:00",
-  "totalRooms": 5,
-  "activeRooms": 5,
-  "totalPlayers": 2,
+  "updatedAt": "2026-11-03T17:05:53.110785+00:00",
+  "totalRooms": 10,
+  "activeRooms": 10,
+  "totalPlayers": 5,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -38,6 +38,41 @@
       "name": "MQSoku",
       "online": 0,
       "capacity": 32
+    },
+    {
+      "ip": "43.136.23.115",
+      "port": 6001,
+      "name": "[CN 1] WIKI.514.LIVE",
+      "online": 3,
+      "capacity": 70
+    },
+    {
+      "ip": "43.136.23.115",
+      "port": 6003,
+      "name": "[CN 2]/report举报各种问题",
+      "online": 0,
+      "capacity": 70
+    },
+    {
+      "ip": "43.136.23.115",
+      "port": 6005,
+      "name": "[CN 3]好多人啊",
+      "online": 0,
+      "capacity": 70
+    },
+    {
+      "ip": "43.136.23.115",
+      "port": 6009,
+      "name": "[CN 05] WIKI.514.LIVE",
+      "online": 0,
+      "capacity": 70
+    },
+    {
+      "ip": "43.136.23.115",
+      "port": 6007,
+      "name": "[CN 04] WIKI.514.LIVE",
+      "online": 0,
+      "capacity": 70
     }
   ]
 }
