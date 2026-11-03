@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-11-03T20:20:47.865230+00:00",
+  "updatedAt": "2026-11-03T20:26:01.591078+00:00",
   "totalRooms": 9,
   "activeRooms": 9,
-  "totalPlayers": 13,
+  "totalPlayers": 15,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -21,8 +21,8 @@
     {
       "ip": "51.91.101.151",
       "port": 10800,
-      "name": "SokuLobbies Public Vanilla Lobby \u0006",
-      "online": 6,
+      "name": "SokuLobbies Public Vanilla Lobby \u0007",
+      "online": 7,
       "capacity": 32
     },
     {
@@ -64,7 +64,7 @@
       "ip": "178.174.147.208",
       "port": 9001,
       "name": "Touhou Sweden - Weekly Lobbies",
-      "online": 7,
+      "online": 8,
       "capacity": 15
     }
   ]
