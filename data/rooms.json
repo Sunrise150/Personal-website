@@ -1,14 +1,14 @@
 {
-  "updatedAt": "2026-11-03T21:55:43.555242+00:00",
+  "updatedAt": "2026-11-03T22:00:53.306515+00:00",
   "totalRooms": 9,
   "activeRooms": 9,
-  "totalPlayers": 0,
+  "totalPlayers": 2,
   "rooms": [
     {
       "ip": "51.91.101.151",
       "port": 10802,
       "name": "Clan War Lobby",
-      "online": 0,
+      "online": 1,
       "capacity": 48
     },
     {
@@ -21,8 +21,8 @@
     {
       "ip": "51.91.101.151",
       "port": 10800,
-      "name": "SokuLobbies Public Vanilla Lobby",
-      "online": 0,
+      "name": "SokuLobbies Public Vanilla Lobby \u0001",
+      "online": 1,
       "capacity": 32
     },
     {
