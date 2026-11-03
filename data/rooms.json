@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-11-03T12:40:47.653296+00:00",
+  "updatedAt": "2026-11-03T12:45:54.535429+00:00",
   "totalRooms": 9,
-  "activeRooms": 8,
-  "totalPlayers": 90,
+  "activeRooms": 7,
+  "totalPlayers": 31,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -35,9 +35,9 @@
     {
       "ip": "43.136.23.115",
       "port": 6001,
-      "name": "[CN 1] WIKI.514.LIVE",
-      "online": 60,
-      "capacity": 70
+      "name": "无法获取",
+      "online": 0,
+      "capacity": 0
     },
     {
       "ip": "94.103.3.82",
@@ -50,7 +50,7 @@
       "ip": "43.136.23.115",
       "port": 6003,
       "name": "[CN 2]/report举报各种问题",
-      "online": 6,
+      "online": 7,
       "capacity": 70
     },
     {
@@ -62,7 +62,7 @@
     },
     {
       "ip": "197.46.18.71",
-      "port": 35043,
+      "port": 58112,
       "name": "无法获取",
       "online": 0,
       "capacity": 0
