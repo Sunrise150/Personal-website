@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-11-03T16:05:33.933139+00:00",
-  "totalRooms": 5,
-  "activeRooms": 4,
+  "updatedAt": "2026-11-03T16:10:27.995663+00:00",
+  "totalRooms": 6,
+  "activeRooms": 5,
   "totalPlayers": 2,
   "rooms": [
     {
@@ -26,18 +26,25 @@
       "capacity": 32
     },
     {
-      "ip": "31.210.172.40",
-      "port": 10800,
-      "name": "无法获取",
-      "online": 0,
-      "capacity": 0
-    },
-    {
       "ip": "94.103.3.82",
       "port": 10800,
       "name": "Ru | Melon lobby",
       "online": 0,
       "capacity": 24
+    },
+    {
+      "ip": "31.210.172.40",
+      "port": 10800,
+      "name": "MQSoku",
+      "online": 0,
+      "capacity": 32
+    },
+    {
+      "ip": "182.113.201.85",
+      "port": 57600,
+      "name": "无法获取",
+      "online": 0,
+      "capacity": 0
     }
   ]
 }
