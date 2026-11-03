@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-11-03T16:40:26.625686+00:00",
-  "totalRooms": 6,
+  "updatedAt": "2026-11-03T16:45:20.511587+00:00",
+  "totalRooms": 5,
   "activeRooms": 5,
-  "totalPlayers": 2,
+  "totalPlayers": 1,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -21,8 +21,8 @@
     {
       "ip": "51.91.101.151",
       "port": 10800,
-      "name": "SokuLobbies Public Vanilla Lobby \u0002",
-      "online": 2,
+      "name": "SokuLobbies Public Vanilla Lobby \u0001",
+      "online": 1,
       "capacity": 32
     },
     {
@@ -38,13 +38,6 @@
       "name": "MQSoku",
       "online": 0,
       "capacity": 32
-    },
-    {
-      "ip": "182.113.201.85",
-      "port": 57600,
-      "name": "无法获取",
-      "online": 0,
-      "capacity": 0
     }
   ]
 }
