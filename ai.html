@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Cloudflare AI 对话</title>
+  <title>博客问答 - 日出的blog</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
@@ -44,7 +44,6 @@
         <a href="write.html">写文章</a>
         <a href="manage.html">管理</a>
         <a href="music.html">音乐</a>
-        <a href="ai.html">AI</a>
         <a href="rooms.html">房间人数查看</a>
         <a href="games.html">游戏</a>
       </nav>
@@ -53,17 +52,16 @@
 
   <main class="ai-wrap">
     <div class="ai-header">
-      <h1>🤖 Cloudflare AI</h1>
+      <h1>🤖 博客问答</h1>
       <p class="ai-hint" style="font-size:12px;color:#78716c;margin:4px 0 0;line-height:1.5;">
-        多轮对话 AI。请先部署 Worker 并填入 WORKER_URL：<br>
-        📖 见项目目录下 <code style="background:#292524;padding:2px 8px;border-radius:4px;color:#fbbf24;">cf-ai-worker.js</code> 顶部部署说明
+        基于博客文章内容的智能问答。问我关于博客的任何问题，我会从文章里帮你找答案。
       </p>
     </div>
     <div class="ai-chat" id="ai-chat">
-      <div class="ai-msg bot">你好呀～有什么可以帮你的吗？</div>
+      <div class="ai-msg bot">你好呀～问我关于博客内容的任何问题！\n比如：怎么写文章？有什么游戏？</div>
     </div>
     <div class="ai-input">
-      <textarea id="ai-input" placeholder="输入消息，Enter 发送 / Shift+Enter 换行..." rows="1"></textarea>
+      <textarea id="ai-input" placeholder="问我关于博客的任何问题..." rows="1"></textarea>
       <button id="ai-send">发送</button>
     </div>
     <div class="ai-reset"><button id="ai-reset">清空对话</button></div>
@@ -74,6 +72,6 @@
   </footer>
 
   <script src="assets/js/config.js?v=3"></script>
-  <script src="assets/js/ai.js?v=1"></script>
+  <script src="assets/js/ai.js?v=5"></script>
 </body>
 </html>
