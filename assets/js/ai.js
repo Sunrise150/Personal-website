@@ -1,11 +1,11 @@
-/* ============ 博客问答机器人（自定义词库 + 大词库 + 文章检索版） ============
+/* ============ 博客问答机器人（自定义词库 + 大词库 + 卡拉彼丘 + 文章检索） ============
  * 三层问答系统（按优先级）：
  *   1. 第一层：自定义词库（data/qa-dict.json）
  *      - 关键词包含匹配 → 返回预设回答
  *      - 用于博客功能介绍（游戏、音乐、写文章等）—— 优先级最高
- *   2. 第二层：大词库匹配（words/可爱系二次元bot词库1.5万词V1.2.json + words/extra-dict.json）
+ *   2. 第二层：大词库匹配（原大词库 + 扩展词库 + 卡拉彼丘词库）
  *      - 精确匹配 / 包含匹配（长 key 优先）→ 随机回答
- *      - 1.2 万词条 + 扩展词库，覆盖日常对话、二次元、闲聊
+ *      - 覆盖日常对话、二次元、闲聊、卡拉彼丘游戏相关
  *   3. 第三层：博客文章检索
  *      - 加载所有文章 → 关键词打分 → 返回相关文章
  */
@@ -14,6 +14,7 @@
   const QA_DICT_JSON = 'data/qa-dict.json?t=' + Date.now();
   const BIG_DICT_JSON = 'words/可爱系二次元bot词库1.5万词V1.2.json?t=' + Date.now();
   const EXTRA_DICT_JSON = 'words/extra-dict.json?t=' + Date.now();
+  const KLBQ_DICT_JSON = 'words/klbq-dict.json?t=' + Date.now();
   const POSTS_DIR = 'posts/';
   const HISTORY_KEY = 'blog_qa_history';
   const MAX_HISTORY = 30;
@@ -25,18 +26,17 @@
   let bigDictKeys = null;  // 排序后的 key 数组（最长优先匹配）
   let markdownCache = {};
 
-  // ==== 加载大词库（原词库 + 扩展词库合并） ====
+  // ==== 加载大词库（三个词库合并） ====
   async function loadBigDict() {
     if (bigDictCache) return bigDictCache;
     try {
-      // 并行加载两个词库
-      const [res1, res2] = await Promise.all([
+      const [res1, res2, res3] = await Promise.all([
         fetch(BIG_DICT_JSON).then(r => r.ok ? r.json() : {}),
-        fetch(EXTRA_DICT_JSON).then(r => r.ok ? r.json() : {})
+        fetch(EXTRA_DICT_JSON).then(r => r.ok ? r.json() : {}),
+        fetch(KLBQ_DICT_JSON).then(r => r.ok ? r.json() : {})
       ]);
-      // 合并：扩展词库优先（后加载的覆盖前面的）
-      bigDictCache = Object.assign({}, res1, res2);
-      // 按 key 长度降序排序（长的优先匹配，避免短 key 误命中）
+      // 合并顺序：原词库 → 扩展词库 → 卡拉彼丘词库（后加载的优先覆盖）
+      bigDictCache = Object.assign({}, res1, res2, res3);
       bigDictKeys = Object.keys(bigDictCache).sort((a, b) => b.length - a.length);
       return bigDictCache;
     } catch (e) {
