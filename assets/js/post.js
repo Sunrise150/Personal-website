@@ -51,8 +51,13 @@ async function loadPost() {
       <h1>${post.title}</h1>
     `;
 
-    // 渲染 Markdown，然后修正图片路径
-    let html = marked.parse(markdown);
+    // 渲染 Markdown，然后修正图片路径（加容错，marked 未定义时用简单换行）
+    let html;
+    try {
+      html = (typeof marked !== 'undefined' && marked.parse) ? marked.parse(markdown) : marked(markdown);
+    } catch (e) {
+      html = markdown.replace(/`{3}([\s\S]*?)`{3}/g, '<pre><code>$1</code></pre>').replace(/\n/g, '<br>');
+    }
     html = fixImagePaths(html);
     document.getElementById('post-content').innerHTML = html;
 

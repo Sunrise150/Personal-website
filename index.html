@@ -123,10 +123,61 @@
       font-size: 13px;
       margin: 0;
     }
+    .site-stats-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      color: #78716c;
+      font-size: 12px;
+    }
+    .site-stats-bar strong {
+      color: var(--accent, #60a5fa);
+      font-weight: 600;
+    }
+    .site-stats-bar span#footer-text { color: #78716c; font-size: 12px; }
+
+    /* 主题切换按钮 */
+    .theme-toggle {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.15);
+      color: inherit;
+      border-radius: 6px;
+      padding: 4px 8px;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      transition: all 0.2s;
+    }
+    .theme-toggle:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.3);
+    }
+
+    /* ==== 深色/浅色主题 ==== */
+    :root.theme-light {
+      color-scheme: light;
+    }
+    :root.theme-light .shell-frame,
+    :root.theme-light body { background: #fafaf9; }
+    :root.theme-light .site-footer { background: #fafaf9; border-top-color: #e7e5e4; }
+    :root.theme-light .site-footer p,
+    :root.theme-light .site-stats-bar { color: #78716c; }
+
+    :root.theme-dark {
+      color-scheme: dark;
+    }
+    :root.theme-dark .shell-frame,
+    :root.theme-dark body { background: #0c0a09; }
+    :root.theme-dark .site-footer { background: #0c0a09; border-top-color: #292524; }
+    :root.theme-dark .site-footer p,
+    :root.theme-dark .site-stats-bar { color: #a8a29e; }
+
     @media (prefers-color-scheme: dark) {
       .shell-frame, body, .site-footer { background: #0c0a09; }
       .site-footer { border-top-color: #292524; }
-      .site-footer p { color: #a8a29e; }
+      .site-footer p, .site-stats-bar { color: #a8a29e; }
       .footer-subline { color: #a8a29e; }
     }
   </style>
@@ -144,6 +195,8 @@
         <a href="music.html" data-path="music.html">音乐</a>
         <a href="rooms.html" data-path="rooms.html">房间人数查看</a>
         <a href="games.html" data-path="games.html">游戏</a>
+        <a href="links.html" data-path="links.html">友链</a>
+        <button id="theme-toggle" class="theme-toggle" type="button" title="主题切换"><span class="theme-icon">🌓</span></button>
         <button id="shell-refresh" class="shell-refresh" type="button" title="刷新当前页（不影响音乐）" aria-label="刷新">↻</button>
       </nav>
     </div>
@@ -152,10 +205,15 @@
   <iframe id="content-frame" class="shell-frame" src="home.html" name="content"></iframe>
 
   <footer class="site-footer">
-    <div class="container"><p id="footer-text"></p></div>
+    <div class="container site-stats-bar">
+      <span>⏱ 运行 <strong id="site-days">—</strong></span>
+      <span>👁 访客 <span id="busuanzi_value_site_pv">—</span></span>
+      <span id="footer-text"></span>
+    </div>
   </footer>
 
-  <script src="assets/js/config.js?v=3"></script>
+  <script src="assets/js/config.js?v=4"></script>
+  <script src="assets/js/site-stats.js?v=1"></script>
   <script src="assets/js/player.js?v=14"></script>
   <script src="assets/js/ai.js?v=5"></script>
   <script>

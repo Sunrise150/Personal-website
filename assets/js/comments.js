@@ -100,7 +100,7 @@ function cmtRenderItem(c, depth) {
   }) : '';
   let bodyHtml;
   try {
-    bodyHtml = marked.parse(c.body || '', { breaks: true });
+    bodyHtml = (typeof marked !== 'undefined' && marked.parse) ? marked.parse(c.body || '', { breaks: true }) : (typeof marked === 'function' ? marked(c.body || '') : (c.body || '').replace(/\n/g, '<br>'));
   } catch {
     bodyHtml = (c.body || '').replace(/\n/g, '<br>');
   }
