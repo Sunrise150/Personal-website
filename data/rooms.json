@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-11-10T09:11:11.928033+00:00",
+  "updatedAt": "2026-11-10T09:21:13.935714+00:00",
   "totalRooms": 9,
   "activeRooms": 9,
-  "totalPlayers": 29,
+  "totalPlayers": 31,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -29,7 +29,7 @@
       "ip": "94.103.3.82",
       "port": 10800,
       "name": "Ru | Melon lobby",
-      "online": 1,
+      "online": 0,
       "capacity": 24
     },
     {
@@ -43,7 +43,7 @@
       "ip": "43.136.23.115",
       "port": 6001,
       "name": "[CN 1] WIKI.514.LIVE",
-      "online": 26,
+      "online": 30,
       "capacity": 70
     },
     {
@@ -57,7 +57,7 @@
       "ip": "43.136.23.115",
       "port": 6003,
       "name": "[CN 2]/report举报各种问题",
-      "online": 2,
+      "online": 1,
       "capacity": 70
     },
     {
