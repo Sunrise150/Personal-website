@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-11-10T21:41:14.169655+00:00",
+  "updatedAt": "2026-11-10T21:51:13.198569+00:00",
   "totalRooms": 10,
   "activeRooms": 10,
-  "totalPlayers": 9,
+  "totalPlayers": 7,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -71,7 +71,7 @@
       "ip": "178.174.147.208",
       "port": 9001,
       "name": "Touhou Sweden - Weekly Lobbies",
-      "online": 2,
+      "online": 0,
       "capacity": 15
     }
   ]
