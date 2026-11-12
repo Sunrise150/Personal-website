@@ -8,9 +8,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css?v=6">
+  <script>try { var _t = localStorage.getItem('blog-theme') || 'light'; if (_t !== 'auto') document.documentElement.setAttribute('data-theme', _t); } catch(e) {}</script>
   <script>if (window.top !== window.self) document.documentElement.classList.add('is-framed');</script>
   <style>
-    body { display: flex; flex-direction: column; min-height: 100vh; background: #0c0a09; overscroll-behavior: contain; }
+    body { display: flex; flex-direction: column; min-height: 100vh; background: var(--bg); color: var(--text); overscroll-behavior: contain; }
     .ai-wrap { flex: 1; display: flex; flex-direction: column; max-width: 720px; width: 100%; margin: 0 auto; padding: 16px; box-sizing: border-box; }
     .ai-header { text-align: center; margin-bottom: 12px; }
     .ai-header h1 { font-family: 'Noto Serif SC', serif; font-size: 22px; margin: 0; color: #fafaf9; }

@@ -1,9 +1,4 @@
-/* ============ 站点统计 + 深色/浅色切换 ============
- * 功能：
- *   1. 运行天数计数器
- *   2. 不蒜子访问计数（busuanzi）
- *   3. 深色/浅色主题切换（localStorage 持久化）
- */
+/* ============ 站点统计 + 深色/浅色切换 ============ */
 (function () {
   // ============ 1. 运行天数 ============
   function initSiteDays() {
@@ -11,14 +6,12 @@
     if (!el) return;
     const birth = (SITE_CONFIG && SITE_CONFIG.birth) || '2024-01-01';
     const b = new Date(birth);
-    const now = new Date();
-    const days = Math.floor((now - b) / 86400000);
+    const days = Math.floor((new Date() - b) / 86400000);
     el.textContent = days >= 0 ? days + ' 天' : '即将上线';
   }
 
   // ============ 2. 不蒜子访问计数 ============
   function initBusuanzi() {
-    // 只在 index.html（shell 页）加载，避免 iframe 页面重复加载
     if (window.top !== window.self) return;
     if (document.getElementById('busuanzi_value_site_pv')) {
       const s = document.createElement('script');
@@ -28,63 +21,104 @@
     }
   }
 
-  // ============ 3. 深色/浅色主题 ============
+  // ============ 3. 主题切换（默认浅色，localStorage 存储） ============
   const THEME_KEY = 'blog-theme';
 
   function applyTheme(theme) {
     const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('theme-dark');
-      root.classList.remove('theme-light');
-    } else if (theme === 'light') {
-      root.classList.add('theme-light');
-      root.classList.remove('theme-dark');
+    if (theme === 'auto') {
+      root.removeAttribute('data-theme');
     } else {
-      // auto - 跟随系统
-      root.classList.remove('theme-dark', 'theme-light');
+      root.setAttribute('data-theme', theme);
     }
     try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
   }
 
-  function initTheme() {
-    // 只在 shell 页（index.html）初始化主题按钮
-    if (window.top !== window.self) return;
-    const saved = (function () { try { return localStorage.getItem(THEME_KEY) || 'auto'; } catch (e) { return 'auto'; } })();
-    applyTheme(saved);
+  function readTheme() {
+    try {
+      const v = localStorage.getItem(THEME_KEY);
+      if (v === 'light' || v === 'dark' || v === 'auto') return v;
+    } catch (e) {}
+    return 'light'; // 默认浅色
+  }
 
-    const btn = document.getElementById('theme-toggle');
-    if (btn) {
-      const icon = btn.querySelector('.theme-icon');
-      const updateIcon = () => {
-        const t = document.documentElement.classList.contains('theme-dark') ? 'dark' :
-                  document.documentElement.classList.contains('theme-light') ? 'light' : 'auto';
-        if (icon) icon.textContent = t === 'dark' ? '☀️' : t === 'light' ? '🌙' : '🌓';
-        btn.title = t === 'dark' ? '切换到浅色' : t === 'light' ? '切换到跟随系统' : '切换到深色';
-      };
-      // 三态循环：auto → light → dark → auto
-      btn.addEventListener('click', () => {
-        const cur = (function () { try { return localStorage.getItem(THEME_KEY) || 'auto'; } catch (e) { return 'auto'; } })();
-        const next = cur === 'auto' ? 'light' : cur === 'light' ? 'dark' : 'auto';
-        applyTheme(next);
+  function initTheme() {
+    // 立即应用（避免白屏闪烁）
+    applyTheme(readTheme());
+
+    // shell 页：初始化按钮 + iframe 联动
+    if (window.top === window.self) {
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        const icon = btn.querySelector('.theme-icon');
+        const updateIcon = () => {
+          const t = document.documentElement.getAttribute('data-theme') || 'auto';
+          if (icon) icon.textContent = t === 'dark' ? '☀️' : t === 'light' ? '🌙' : '🌓';
+          btn.title = t === 'dark' ? '切换到浅色' : t === 'light' ? '切换到跟随系统' : '切换到深色';
+        };
+
+        // 同步 iframe 当前主题
+        function syncIframeTheme() {
+          const frame = document.getElementById('content-frame');
+          if (!frame) return;
+          try {
+            const frameDoc = frame.contentDocument;
+            if (!frameDoc) return;
+            const cur = readTheme();
+            if (cur === 'auto') {
+              frameDoc.documentElement.removeAttribute('data-theme');
+            } else {
+              frameDoc.documentElement.setAttribute('data-theme', cur);
+            }
+          } catch (e) {}
+        }
+
+        // iframe 每次加载新页面时也同步一次
+        const frame = document.getElementById('content-frame');
+        if (frame) {
+          frame.addEventListener('load', syncIframeTheme);
+        }
+
+        // 三态：light → dark → auto → light
+        btn.addEventListener('click', () => {
+          const cur = readTheme();
+          const next = cur === 'light' ? 'dark' : cur === 'dark' ? 'auto' : 'light';
+          applyTheme(next);
+          updateIcon();
+          syncIframeTheme();
+        });
         updateIcon();
+
+        // 立即同步一次
+        syncIframeTheme();
+      }
+
+      // 系统主题变化（auto 模式）
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        if (readTheme() === 'auto') {
+          applyTheme('auto');
+          // 同步 iframe
+          const frame = document.getElementById('content-frame');
+          if (frame) {
+            try { frame.contentDocument?.documentElement?.removeAttribute('data-theme'); } catch(e) {}
+          }
+        }
       });
-      updateIcon();
     }
 
-    // 监听系统主题变化（auto 模式下实时切换）
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-      try {
-        if (localStorage.getItem(THEME_KEY) === 'auto') {
-          applyTheme('auto');
-        }
-      } catch (e) {}
+    // iframe 内子页面：监听 storage 事件同步
+    window.addEventListener('storage', (e) => {
+      if (e.key === THEME_KEY) {
+        applyTheme(e.newValue || 'light');
+      }
     });
   }
 
-  // ============ 执行 ============
+  // 尽早执行主题初始化（在 DOMContentLoaded 之前，避免闪烁）
+  initTheme();
+
   document.addEventListener('DOMContentLoaded', () => {
     initSiteDays();
     initBusuanzi();
-    initTheme();
   });
 })();

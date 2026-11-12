@@ -104,6 +104,7 @@
           <button id="music-play" aria-label="播放/暂停">▶</button>
           <button id="music-next" aria-label="下一首">⏭</button>
           <button id="music-mode" class="music-mode-btn" aria-label="播放模式" title="顺序循环">↻</button>
+          <button id="music-viz" class="music-mode-btn" aria-label="可视化" title="波形可视化">🎵</button>
         </div>
         <div class="music-search-bar">
           <input type="search" id="music-search-input" placeholder="搜索曲目 / 歌手…" autocomplete="off">
@@ -469,6 +470,35 @@
   $('music-next').addEventListener('click', () => load(current + 1, true, true));
   $('music-mode').addEventListener('click', togglePlayMode);
 
+  /* 可视化开关 */
+  const vizBtn = $('music-viz');
+  if (vizBtn) {
+    // 读取上次的设置
+    let vizOn = false;
+    try { vizOn = localStorage.getItem('blog-viz') === '1'; } catch {}
+    if (vizOn) vizBtn.classList.add('is-viz-on');
+    vizBtn.addEventListener('click', () => {
+      vizOn = !vizOn;
+      vizBtn.classList.toggle('is-viz-on', vizOn);
+      try { localStorage.setItem('blog-viz', vizOn ? '1' : '0'); } catch {}
+      // 通知 visualizer.js 显示/隐藏
+      if (window.__blogViz) {
+        window.__blogViz.toggle(vizOn);
+      } else {
+        // 兜底：直接操作 canvas
+        const c = document.getElementById('audio-viz');
+        if (c) c.style.display = vizOn ? '' : 'none';
+      }
+      vizBtn.title = vizOn ? '关闭可视化' : '波形可视化';
+    });
+    // 初始化状态同步
+    setTimeout(() => {
+      if (window.__blogViz) window.__blogViz.init(vizOn);
+      const c = document.getElementById('audio-viz');
+      if (c) c.style.display = vizOn ? '' : 'none';
+    }, 500);
+  }
+
   /* 接收 music-manage.js 派发的最新列表 */
   window.addEventListener('blog:music-list', (e) => {
     const list = e && e.detail;
@@ -489,7 +519,11 @@
     setMode('collapsed');
   });
 
-  window.__blogPlayer = { collapse: () => setMode('collapsed') };
+  window.__blogPlayer = {
+    collapse: () => setMode('collapsed'),
+    getAudio: () => _audio,
+    isPlaying: () => playing
+  };
 
   /* 状态保存事件 */
   window.addEventListener('pagehide', save);
