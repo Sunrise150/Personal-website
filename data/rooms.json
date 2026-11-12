@@ -1,6 +1,6 @@
 {
-  "updatedAt": "2026-11-12T22:01:16.635948+00:00",
-  "totalRooms": 10,
+  "updatedAt": "2026-11-12T22:11:11.195111+00:00",
+  "totalRooms": 9,
   "activeRooms": 9,
   "totalPlayers": 5,
   "rooms": [
@@ -66,13 +66,6 @@
       "name": "[TEST]",
       "online": 0,
       "capacity": 12
-    },
-    {
-      "ip": "197.58.175.202",
-      "port": 65219,
-      "name": "无法获取",
-      "online": 0,
-      "capacity": 0
     }
   ]
 }
