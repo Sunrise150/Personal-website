@@ -1,111 +1,103 @@
-/* ============ 音乐可视化 —— 真正 Beat Detection ============
- * 
- * 默认隐藏，音乐抽屉的 🎵 按钮开关，状态记忆到 localStorage
- * Beat Detection: bass onset + 自适应阈值 + 最小间隔去密集
+/* ============ 音乐可视化 —— 水平直方图 + 圆形频谱 ============
+ *
+ * 两种模式：
+ *   bar   — 底部水平条形图（默认）
+ *   circle — 右下角圆形频谱（居中辐射柱）
+ *
+ * 双击 canvas 或长按 🎵 按钮切换模式，🎵 按钮短按开/关
+ * 状态持久化到 localStorage
  */
 (function () {
   if (window.top !== window.self) return;
 
+  // ===== 读取偏好 =====
+  let vizOn = false;
+  let mode = 'bar'; // 'bar' | 'circle'
+  try {
+    vizOn = localStorage.getItem('blog-viz') === '1';
+    mode = localStorage.getItem('blog-viz-mode') || 'bar';
+  } catch {}
+
   const canvas = document.createElement('canvas');
   canvas.id = 'audio-viz';
-  canvas.style.cssText = `
-    position: fixed; left: 0; right: 0;
-    bottom: 64px; height: 44px; z-index: 7999;
-    pointer-events: none; opacity: 0.85;
-    display: none;
-  `;
+  applyModeStyle(); // 先应用样式再 append
+  canvas.style.cssText += 'pointer-events:auto; z-index:7999;';
   document.body.appendChild(canvas);
   const ctx = canvas.getContext('2d');
 
   let audioCtx = null, analyser = null, source = null;
-  let freqData = null, timeData = null;
+  let freqData = null;
   let connectedAudio = null;
   let rafId = null;
-  let visible = false;
 
-  // ===== Beat Detection 状态 =====
-  const BEAT = {
-    bassFloor: 0, midFloor: 0, trebleFloor: 0,
-    bass: 0, mid: 0, treble: 0, volume: 0,
-    prevBass: 0,
-    pulse: 0,
-    lastBeatAt: 0,
-    fluxWindow: [],
-    onsetThreshold: 0.2,
-    huePulse: 0
-  };
-  // 两个 beat 最小间隔 (ms) —— 调到 500ms = ~120BPM 上限，稳一点
-  const MIN_BEAT_GAP_MS = 500;
+  // 视觉参数
+  const BAR_COUNT = 64;
+  const BAR_SMOOTH_UP = 0.7;    // 上升快
+  const BAR_SMOOTH_DOWN = 0.88; // 下降慢
+  const barSmoothed = new Array(BAR_COUNT).fill(0);
+  const barPeak = new Array(BAR_COUNT).fill(0);
+  const PEAK_DECAY = 0.94;
+
+  let dpr = window.devicePixelRatio || 1;
+
+  function applyModeStyle() {
+    if (mode === 'bar') {
+      canvas.style.cssText = `
+        position:fixed; left:0; right:0; bottom:64px; height:56px;
+        pointer-events:auto; z-index:7999; opacity:0.9;
+        display:${vizOn ? '' : 'none'};
+      `;
+    } else {
+      // 圆形：右下角正方形，稍微浮起
+      canvas.style.cssText = `
+        position:fixed; right:20px; bottom:80px; width:220px; height:220px;
+        pointer-events:auto; z-index:7999; opacity:0.92;
+        border-radius:50%;
+        display:${vizOn ? '' : 'none'};
+      `;
+    }
+  }
 
   function resize() {
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = window.innerWidth * dpr;
-    canvas.height = 44 * dpr;
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = '44px';
+    dpr = window.devicePixelRatio || 1;
+    if (mode === 'bar') {
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = 56 * dpr;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = '56px';
+    } else {
+      const size = 220;
+      canvas.width = size * dpr;
+      canvas.height = size * dpr;
+      canvas.style.width = size + 'px';
+      canvas.style.height = size + 'px';
+    }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
-  function computeBands() {
-    const len = freqData.length;
-    let bass = 0;
-    for (let i = 1; i < 11; i++) bass += freqData[i] / 255;
-    bass /= 10;
-    let mid = 0;
-    for (let i = 11; i < 81; i++) mid += freqData[i] / 255;
-    mid /= 70;
-    let treble = 0;
-    for (let i = 81; i < len; i++) treble += freqData[i] / 255;
-    treble /= Math.max(1, len - 81);
-    let sumSq = 0;
-    for (let i = 2; i < len; i++) {
-      const v = freqData[i] / 255;
-      sumSq += v * v;
-    }
-    const volume = Math.sqrt(sumSq / (len - 2));
-    return { bass, mid, treble, volume };
+  function switchMode() {
+    mode = mode === 'bar' ? 'circle' : 'bar';
+    try { localStorage.setItem('blog-viz-mode', mode); } catch {}
+    applyModeStyle();
+    resize();
+    console.log('[viz] mode →', mode);
   }
 
-  function detectBeat(bands) {
-    const now = performance.now();
-    BEAT.bassFloor = BEAT.bassFloor * 0.97 + bands.bass * 0.03;
-    BEAT.midFloor = BEAT.midFloor * 0.97 + bands.mid * 0.03;
-    BEAT.trebleFloor = BEAT.trebleFloor * 0.97 + bands.treble * 0.03;
-    BEAT.bass = Math.min(1, bands.bass / Math.max(0.01, BEAT.bassFloor));
-    BEAT.mid = Math.min(1, bands.mid / Math.max(0.01, BEAT.midFloor));
-    BEAT.treble = Math.min(1, bands.treble / Math.max(0.01, BEAT.trebleFloor));
-    BEAT.volume = bands.volume;
-
-    const flux = Math.max(0, bands.bass - BEAT.prevBass);
-    BEAT.prevBass = bands.bass;
-
-    BEAT.fluxWindow.push(flux);
-    if (BEAT.fluxWindow.length > 120) BEAT.fluxWindow.shift();
-    let maxFlux = 0;
-    for (const f of BEAT.fluxWindow) if (f > maxFlux) maxFlux = f;
-    BEAT.onsetThreshold = Math.max(0.18, maxFlux * 0.6);
-
-    const gapOk = (now - BEAT.lastBeatAt) > MIN_BEAT_GAP_MS;
-    const fluxOk = flux > BEAT.onsetThreshold;
-    const bassStrong = bands.bass > BEAT.bassFloor * 1.6;
-
-    if (gapOk && fluxOk && bassStrong) {
-      BEAT.pulse = Math.min(1, flux * 3 + 0.45);
-      BEAT.lastBeatAt = now;
-      BEAT.huePulse = Math.min(1, BEAT.mid * 1.1 + bands.treble * 0.4);
-    }
-
-    BEAT.pulse *= 0.9;
-    BEAT.huePulse *= 0.93;
-    BEAT.volume *= 0.96;
-  }
+  // 双击切换
+  canvas.addEventListener('dblclick', switchMode);
+  // 长按（600ms）也能切换
+  let pressTimer = null;
+  canvas.addEventListener('touchstart', () => {
+    pressTimer = setTimeout(switchMode, 600);
+  }, { passive: true });
+  canvas.addEventListener('touchend', () => { clearTimeout(pressTimer); }, { passive: true });
+  canvas.addEventListener('touchcancel', () => { clearTimeout(pressTimer); }, { passive: true });
 
   function ensureAnalyser() {
     const player = window.__blogPlayer;
     if (!player) return false;
     const audio = player.getAudio && player.getAudio();
     if (!audio) return false;
-
     if (analyser && connectedAudio === audio) {
       if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
       return true;
@@ -114,24 +106,21 @@
       try { source.disconnect(); analyser.disconnect(); } catch(e) {}
       source = null; analyser = null;
     }
-
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!audioCtx) audioCtx = new AC();
       if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
-
       source = audioCtx.createMediaElementSource(audio);
       analyser = audioCtx.createAnalyser();
       analyser.fftSize = 512;
-      analyser.smoothingTimeConstant = 0.82;
+      analyser.smoothingTimeConstant = 0.75;
       analyser.minDecibels = -80;
       analyser.maxDecibels = -10;
       source.connect(analyser);
       analyser.connect(audioCtx.destination);
       freqData = new Uint8Array(analyser.frequencyBinCount);
-      timeData = new Uint8Array(analyser.fftSize);
       connectedAudio = audio;
-      console.log('[viz] Beat detector connected');
+      console.log('[viz] connected, mode=', mode);
       return true;
     } catch (e) {
       console.warn('[viz] connect fail:', e.message);
@@ -139,158 +128,226 @@
     }
   }
 
+  function computeBars() {
+    const binLen = freqData.length;
+    const bars = new Array(BAR_COUNT);
+    const binsPerBar = binLen / BAR_COUNT;
+    for (let b = 0; b < BAR_COUNT; b++) {
+      let sum = 0;
+      const start = Math.floor(b * binsPerBar);
+      const end = Math.floor((b + 1) * binsPerBar);
+      for (let i = start; i < end; i++) sum += freqData[i];
+      bars[b] = sum / (end - start) / 255;
+    }
+    return bars;
+  }
+
+  function smoothBars(rawBars) {
+    for (let i = 0; i < BAR_COUNT; i++) {
+      const target = rawBars[i];
+      const smooth = target > barSmoothed[i] ? BAR_SMOOTH_UP : BAR_SMOOTH_DOWN;
+      barSmoothed[i] = barSmoothed[i] * smooth + target * (1 - smooth);
+      if (barSmoothed[i] > barPeak[i]) barPeak[i] = barSmoothed[i];
+      else barPeak[i] *= PEAK_DECAY;
+    }
+  }
+
+  // ===== 绘制：水平条形 =====
+  function drawBar(w, h) {
+    const gapRatio = 0.25;
+    const barW = w / BAR_COUNT * (1 - gapRatio);
+    const gap = w / BAR_COUNT * gapRatio;
+    const maxH = h * 1;
+
+    for (let i = 0; i < BAR_COUNT; i++) {
+      const v = Math.max(0.02, Math.min(1, barSmoothed[i]));
+      const barH = v * maxH;
+      const x = i * (barW + gap) + gap / 2;
+      const y = h - barH;
+
+      const t = i / BAR_COUNT;
+      const hueNorm = ((120 - t * 180) % 360 + 360) % 360;
+      const light = 45 + v * 25;
+      const alpha = 0.7 + v * 0.3;
+
+      const grad = ctx.createLinearGradient(0, y, 0, h);
+      grad.addColorStop(0, `hsla(${hueNorm}, 85%, ${light + 10}%, ${alpha})`);
+      grad.addColorStop(1, `hsla(${hueNorm}, 80%, ${light - 10}%, ${alpha})`);
+      ctx.fillStyle = grad;
+
+      roundRect(ctx, x, y, barW, barH, Math.min(barW / 2, 3));
+      ctx.fill();
+
+      // 峰值
+      if (barPeak[i] > 0.05) {
+        const peakY = h - barPeak[i] * maxH - 2;
+        ctx.fillStyle = `hsla(${hueNorm}, 90%, ${light + 20}%, 0.9)`;
+        roundRect(ctx, x, peakY, barW, 2, 1);
+        ctx.fill();
+      }
+    }
+  }
+
+  // ===== 绘制：圆形频谱 =====
+  function drawCircle(w, h) {
+    const cx = w / 2, cy = h / 2;
+    const baseRadius = Math.min(w, h) * 0.18;  // 内圈基础半径
+    const maxRadius = Math.min(w, h) * 0.42;  // 外圈最大柱长
+    const totalBars = BAR_COUNT;
+
+    // 先画个半透明内圈，让整体看起来不那么散
+    ctx.beginPath();
+    ctx.arc(cx, cy, baseRadius * 0.6, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.03)';
+    ctx.fill();
+
+    // 背景参考圈（最外圈虚线）
+    ctx.beginPath();
+    ctx.arc(cx, cy, maxRadius, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(100,100,100,0.12)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 画每根辐射柱
+    for (let i = 0; i < totalBars; i++) {
+      const v = Math.max(0.02, Math.min(1, barSmoothed[i]));
+      const innerR = baseRadius;
+      const outerR = baseRadius + v * (maxRadius - baseRadius);
+
+      // 角度：从 -90° (顶部) 开始顺时针
+      const angle = -Math.PI / 2 + (i / totalBars) * Math.PI * 2;
+      const nextAngle = -Math.PI / 2 + ((i + 0.85) / totalBars) * Math.PI * 2;
+
+      const x1 = cx + Math.cos(angle) * innerR;
+      const y1 = cy + Math.sin(angle) * innerR;
+      const x2 = cx + Math.cos(angle) * outerR;
+      const y2 = cy + Math.sin(angle) * outerR;
+      const x3 = cx + Math.cos(nextAngle) * outerR;
+      const y3 = cy + Math.sin(nextAngle) * outerR;
+      const x4 = cx + Math.cos(nextAngle) * innerR;
+      const y4 = cy + Math.sin(nextAngle) * innerR;
+
+      // 颜色：同样 bass→treble 映射 hue，音量影响亮度
+      const t = i / totalBars;
+      const hueNorm = ((120 - t * 180) % 360 + 360) % 360;
+      const light = 40 + v * 30;
+      const alpha = 0.75 + v * 0.25;
+
+      const grad = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
+      grad.addColorStop(0, `hsla(${hueNorm}, 75%, ${light}%, ${alpha})`);
+      grad.addColorStop(1, `hsla(${hueNorm}, 85%, ${light + 15}%, ${alpha})`);
+      ctx.fillStyle = grad;
+
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.lineTo(x3, y3);
+      ctx.lineTo(x4, y4);
+      ctx.closePath();
+      ctx.fill();
+
+      // 峰值小圆点
+      if (barPeak[i] > 0.05) {
+        const peakR = baseRadius + barPeak[i] * (maxRadius - baseRadius);
+        const px = cx + Math.cos(angle + 0.01) * peakR;
+        const py = cy + Math.sin(angle + 0.01) * peakR;
+        ctx.beginPath();
+        ctx.arc(px, py, 1.8, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${hueNorm}, 95%, ${light + 25}%, 0.95)`;
+        ctx.fill();
+      }
+    }
+
+    // 中心装饰圈
+    const totalEnergy = barSmoothed.reduce((a, b) => a + b, 0) / BAR_COUNT;
+    const pulseR = baseRadius * 0.5 + totalEnergy * 4;
+    ctx.beginPath();
+    ctx.arc(cx, cy, pulseR, 0, Math.PI * 2);
+    const cg = ctx.createRadialGradient(cx, cy, 0, cx, cy, pulseR);
+    cg.addColorStop(0, `hsla(210, 80%, 65%, ${0.5 + totalEnergy * 0.3})`);
+    cg.addColorStop(1, `hsla(210, 80%, 50%, ${0.1})`);
+    ctx.fillStyle = cg;
+    ctx.fill();
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    r = Math.max(0, Math.min(r, w / 2, h / 2));
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h);
+    ctx.lineTo(x, y + h);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
   function draw() {
     rafId = requestAnimationFrame(draw);
-    // 隐藏时不画
-    if (!visible) return;
+    if (!vizOn) return;
 
     const player = window.__blogPlayer;
     const playing = player && player.isPlaying && player.isPlaying();
-    const w = window.innerWidth, h = 44, cy = h / 2;
+    const w = canvas.width / dpr, h = canvas.height / dpr;
 
     ctx.clearRect(0, 0, w, h);
 
-    if (!playing) {
-      ctx.strokeStyle = 'rgba(96,165,250,0.2)';
-      ctx.lineWidth = 1.5;
+    if (mode === 'circle') {
+      // 先画圆形的半透明底
       ctx.beginPath();
-      const t = Date.now() / 1000;
-      for (let x = 0; x <= w; x += 4) {
-        const y = cy + Math.sin(x * 0.012 + t * 1.2) * 0.8;
-        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-      BEAT.pulse *= 0.9;
-      BEAT.huePulse *= 0.9;
+      ctx.arc(w / 2, h / 2, Math.min(w, h) / 2, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(12,12,14,0.04)';
+      ctx.fill();
+    }
+
+    if (!playing || !analyser || !freqData) {
+      // 未播放：安静的基线
+      const quiet = new Array(BAR_COUNT).fill(0.04);
+      smoothBars(quiet);
+      if (mode === 'bar') drawBar(w, h); else drawCircle(w, h);
+      for (let i = 0; i < BAR_COUNT; i++) barPeak[i] *= PEAK_DECAY;
       return;
     }
 
-    if (!analyser) { ensureAnalyser(); }
-    if (!analyser || !freqData) return;
-
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume().catch(() => {});
-    }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
 
     analyser.getByteFrequencyData(freqData);
-    analyser.getByteTimeDomainData(timeData);
+    const raw = computeBars();
+    smoothBars(raw);
 
-    const bands = computeBands();
-    detectBeat(bands);
-
-    const baseAmp = 4 + BEAT.volume * 32;
-    const beatBoost = BEAT.pulse * 22;
-
-    const hueShift = BEAT.pulse * 40 + BEAT.huePulse * 25;
-    const hue1 = 210 + hueShift * 0.3;
-    const hue2 = 170 + hueShift * 0.5;
-    const hue3 = 260 + hueShift * 0.2;
-    const alpha = 0.8 + BEAT.pulse * 0.2;
-
-    // ===== 主波形线 =====
-    ctx.lineWidth = 2 + BEAT.pulse * 1.8;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    const grad = ctx.createLinearGradient(0, 0, w, 0);
-    grad.addColorStop(0, `hsla(${hue1}, 90%, 65%, ${alpha})`);
-    grad.addColorStop(0.5, `hsla(${hue2}, 95%, 60%, ${Math.min(1, alpha + 0.1)})`);
-    grad.addColorStop(1, `hsla(${hue3}, 85%, 70%, ${alpha})`);
-    ctx.strokeStyle = grad;
-    ctx.beginPath();
-
-    const tdLen = timeData.length;
-    const step = w / tdLen;
-    for (let i = 0; i < tdLen; i++) {
-      const sample = (timeData[i] - 128) / 128;
-      const v = Math.abs(sample);
-      const midMod = 1 + BEAT.mid * 0.3;
-      const amp = (v * baseAmp + beatBoost * v + BEAT.pulse * 3) * midMod;
-      const x = i * step;
-      const y = cy - amp * Math.sign(sample || 1);
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-
-    // ===== 频谱柱 =====
-    ctx.globalAlpha = 0.25 + BEAT.pulse * 0.3;
-    const bars = 64;
-    const stepB = w / bars;
-    ctx.beginPath();
-    for (let i = 0; i < bars; i++) {
-      const binIdx = Math.floor(i * freqData.length / bars);
-      const v = freqData[binIdx] / 255;
-      const amp = v * baseAmp * 0.7 + 1 + BEAT.pulse * (i < bars * 0.25 ? 2.5 : 1);
-      const x = i * stepB + stepB / 2;
-      const y = cy - amp;
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    }
-    const gradTop = ctx.createLinearGradient(0, 0, w, 0);
-    gradTop.addColorStop(0, `hsla(${120 + BEAT.pulse * 30}, 70%, 55%, ${0.5 + BEAT.pulse * 0.4})`);
-    gradTop.addColorStop(0.4, `hsla(${45 + BEAT.pulse * 20}, 85%, 55%, ${0.5 + BEAT.pulse * 0.4})`);
-    gradTop.addColorStop(1, `hsla(${280 - BEAT.pulse * 40}, 75%, 60%, ${0.5 + BEAT.pulse * 0.4})`);
-    ctx.strokeStyle = gradTop;
-    ctx.lineWidth = 1.5 + BEAT.pulse;
-    ctx.stroke();
-
-    // ===== 下半部镜像 =====
-    ctx.globalAlpha = 0.2 + BEAT.pulse * 0.2;
-    ctx.beginPath();
-    for (let i = 0; i < bars; i++) {
-      const binIdx = Math.floor(i * freqData.length / bars);
-      const v = freqData[binIdx] / 255;
-      const amp = v * baseAmp * 0.5 + 1;
-      const x = i * stepB + stepB / 2;
-      const y = cy + amp;
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    }
-    ctx.strokeStyle = gradTop;
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // ===== Beat 闪光 =====
-    if (BEAT.pulse > 0.5) {
-      ctx.globalAlpha = (BEAT.pulse - 0.5) * 2;
-      ctx.strokeStyle = `hsla(${330 + BEAT.huePulse * 40}, 90%, 70%, 0.8)`;
-      ctx.lineWidth = 1;
-      const flashBars = 16;
-      const flashStep = w / flashBars;
-      ctx.beginPath();
-      for (let i = 0; i < flashBars; i++) {
-        const binIdx = Math.floor(i * 8);
-        const v = freqData[Math.min(binIdx, freqData.length - 1)] / 255;
-        const spark = v * 8 * BEAT.pulse;
-        const x = i * flashStep + flashStep / 2;
-        if (i === 0) ctx.moveTo(x, cy - spark - 4); else ctx.lineTo(x, cy - spark - 4);
-      }
-      ctx.stroke();
-    }
-
-    ctx.globalAlpha = 1;
+    if (mode === 'bar') drawBar(w, h); else drawCircle(w, h);
   }
+
+  // ===== 长按检测（给 player.js 的 🎵 按钮切换模式用） =====
+  let btnPressTimer = null;
+  window.__blogVizLongPress = false;
 
   // ===== 公共 API =====
   const VizAPI = {
     toggle(on) {
-      visible = !!on;
-      canvas.style.display = visible ? '' : 'none';
-      if (visible) {
-        ensureAnalyser();
-      }
+      vizOn = !!on;
+      canvas.style.display = vizOn ? '' : 'none';
+      try { localStorage.setItem('blog-viz', vizOn ? '1' : '0'); } catch {}
+      if (vizOn) { ensureAnalyser(); resize(); }
     },
     init(on) {
-      visible = !!on;
-      canvas.style.display = visible ? '' : 'none';
-      if (visible) ensureAnalyser();
+      vizOn = !!on;
+      canvas.style.display = vizOn ? '' : 'none';
+      if (vizOn) ensureAnalyser();
     },
     show() { this.toggle(true); },
-    hide() { this.toggle(false); }
+    hide() { this.toggle(false); },
+    switchMode: switchMode,
+    getMode: () => mode
   };
 
   document.addEventListener('DOMContentLoaded', () => {
     resize();
     window.addEventListener('resize', resize);
-    draw(); // 即使隐藏也保持 RAF（pause 时 overhead 很低）
+    draw();
 
     const checkPlayer = setInterval(() => {
       const p = window.__blogPlayer;

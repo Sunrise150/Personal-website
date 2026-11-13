@@ -34,16 +34,22 @@ const posts = files.map(file => {
   const slug = file.replace(/\.md$/, '');
   const raw = fs.readFileSync(path.join(POSTS_DIR, file), 'utf-8');
   const { data } = parseFrontmatter(raw);
+  // pin: true / "true" / 1 都算置顶
+  const rawPin = data.pin;
+  const pin = rawPin === true || rawPin === 'true' || rawPin === '1' || rawPin === 1;
   return {
     slug,
     title: data.title || slug,
     date: data.date || '1970-01-01',
     tags: Array.isArray(data.tags) ? data.tags : [],
-    excerpt: data.excerpt || ''
+    excerpt: data.excerpt || '',
+    pin: pin || false
   };
 });
 
 posts.sort((a, b) => {
+  // 置顶排最前
+  if (a.pin !== b.pin) return a.pin ? -1 : 1;
   const d = new Date(b.date) - new Date(a.date);
   if (d !== 0) return d;
   const ta = parseInt((a.slug || '').split('-').pop(), 36) || 0;

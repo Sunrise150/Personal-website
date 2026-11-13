@@ -133,8 +133,9 @@ function renderList(list) {
     wrap.innerHTML = '<p class="empty">还没有文章</p>';
     return;
   }
-  // 按日期倒序；同一天按 slug 中的时间戳降序（与首页一致，新在前）
+  // 按置顶优先 + 日期倒序（与首页一致）
   const sorted = list.slice().sort((a, b) => {
+    if (a.pin !== b.pin) return a.pin ? -1 : 1;
     const d = new Date(b.date) - new Date(a.date);
     if (d !== 0) return d;
     const ta = parseInt((a.slug || '').split('-').pop(), 36) || 0;
@@ -144,14 +145,15 @@ function renderList(list) {
   const frag = document.createDocumentFragment();
   sorted.forEach((p) => {
     const item = document.createElement('div');
-    item.className = 'manage-item';
+    item.className = 'manage-item' + (p.pin ? ' is-pinned' : '');
     item.dataset.slug = p.slug;
     item.innerHTML = `
       <div class="manage-info">
-        <div class="manage-title">${escapeHtml(p.title || '(无标题)')}</div>
+        <div class="manage-title">${escapeHtml(p.title || '(无标题)')}${p.pin ? ' <span class="pin-inline">📌 置顶</span>' : ''}</div>
         <div class="manage-meta">${escapeHtml(formatDate(p.date))} · ${(p.tags || []).map(escapeHtml).join(', ') || '无标签'} · ${escapeHtml(p.slug)}</div>
       </div>
       <div class="manage-actions">
+        <button class="mini-btn" data-act="pin" data-slug="${escapeHtml(p.slug)}">${p.pin ? '取消置顶' : '置顶'}</button>
         <a class="mini-btn" href="post.html?slug=${encodeURIComponent(p.slug)}" target="_blank">查看</a>
         <button class="mini-btn danger" data-act="del" data-slug="${escapeHtml(p.slug)}">删除</button>
       </div>
@@ -212,10 +214,61 @@ function initSearch() {
 
 /* ============ 性能优化：事件委托（单一监听器） ============ */
 document.getElementById('manage-list').addEventListener('click', (e) => {
-  const btn = e.target.closest('button[data-act="del"]');
-  if (!btn) return;
-  onDelete(btn.dataset.slug);
+  const pinBtn = e.target.closest('button[data-act="pin"]');
+  if (pinBtn) { togglePin(pinBtn.dataset.slug); return; }
+  const delBtn = e.target.closest('button[data-act="del"]');
+  if (delBtn) { onDelete(delBtn.dataset.slug); }
 });
+
+/* ============ 置顶/取消置顶 ============ */
+async function togglePin(slug) {
+  try {
+    const { list: posts, sha: postsSha } = await loadPosts();
+    const item = posts.find(p => p.slug === slug);
+    if (!item) throw new Error('文章不在索引中');
+
+    const mdPath = `${POSTS_DIR}/${slug}.md`;
+    setStatus('读取文章文件…');
+    const fileMeta = await ghGet(mdPath);
+    if (!fileMeta) throw new Error(`找不到文章文件 posts/${slug}.md`);
+
+    const currentPin = item.pin === true || item.pin === 'true';
+    const newPin = !currentPin;
+
+    // 修改 markdown frontmatter 的 pin 字段
+    let newContent;
+    const fmMatch = fileMeta.content.match(/^---\n([\s\S]*?)\n---\n?/);
+    if (!fmMatch) {
+      // 没有 frontmatter，在文件开头加一个
+      newContent = `---\npin: ${newPin ? 'true' : 'false'}\n---\n\n${fileMeta.content}`;
+    } else {
+      const fm = fmMatch[1];
+      const afterFm = fileMeta.content.slice(fmMatch[0].length);
+      let newFm;
+      if (/^pin\s*:/m.test(fm)) {
+        // 已有 pin 行 → 替换
+        newFm = fm.replace(/^pin\s*:\s*.+$/m, `pin: ${newPin ? 'true' : 'false'}`);
+      } else {
+        // 没有 pin 行 → 在 title/date 之后插入
+        newFm = fm + `\npin: ${newPin ? 'true' : 'false'}`;
+      }
+      newContent = `---\n${newFm}\n---\n${afterFm}`;
+    }
+
+    setStatus(`正在${newPin ? '置顶' : '取消置顶'}文章文件…`);
+    await ghPut(mdPath, encodeBase64(newContent), `${newPin ? '置顶' : '取消置顶'}文章：${item.title}`, fileMeta.sha);
+
+    // 同步更新 posts.json
+    item.pin = newPin;
+    setStatus('正在更新索引…');
+    await savePosts(posts, postsSha, `${newPin ? '置顶' : '取消置顶'}：${item.title}`);
+
+    setStatus(`✓ 已${newPin ? '置顶' : '取消置顶'}，约 1 分钟后全站生效`, 'ok');
+    render();
+  } catch (e) {
+    setStatus('操作失败：' + e.message, 'error');
+  }
+}
 
 async function onDelete(slug) {
   if (!confirm(`确定删除文章「${slug}」吗？此操作不可恢复。`)) return;

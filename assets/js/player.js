@@ -470,27 +470,41 @@
   $('music-next').addEventListener('click', () => load(current + 1, true, true));
   $('music-mode').addEventListener('click', togglePlayMode);
 
-  /* 可视化开关 */
+  /* 可视化开关（短按 = 开关，长按 500ms = 切换水平/圆形） */
   const vizBtn = $('music-viz');
   if (vizBtn) {
-    // 读取上次的设置
     let vizOn = false;
     try { vizOn = localStorage.getItem('blog-viz') === '1'; } catch {}
     if (vizOn) vizBtn.classList.add('is-viz-on');
-    vizBtn.addEventListener('click', () => {
+
+    let pressTimer = null;
+    let didLongPress = false;
+    const onDown = () => {
+      didLongPress = false;
+      pressTimer = setTimeout(() => {
+        didLongPress = true;
+        if (window.__blogViz && vizOn) {
+          window.__blogViz.switchMode();
+          vizBtn.title = '模式: ' + (window.__blogViz.getMode() === 'bar' ? '条形' : '圆形');
+        }
+      }, 500);
+    };
+    const onUp = () => {
+      clearTimeout(pressTimer);
+      if (didLongPress) return; // 长按了就不触发短按
+      // 短按 = 开关
       vizOn = !vizOn;
       vizBtn.classList.toggle('is-viz-on', vizOn);
       try { localStorage.setItem('blog-viz', vizOn ? '1' : '0'); } catch {}
-      // 通知 visualizer.js 显示/隐藏
-      if (window.__blogViz) {
-        window.__blogViz.toggle(vizOn);
-      } else {
-        // 兜底：直接操作 canvas
-        const c = document.getElementById('audio-viz');
-        if (c) c.style.display = vizOn ? '' : 'none';
-      }
-      vizBtn.title = vizOn ? '关闭可视化' : '波形可视化';
-    });
+      if (window.__blogViz) window.__blogViz.toggle(vizOn);
+      vizBtn.title = vizOn ? '关闭可视化 (长按切换模式)' : '波形可视化';
+    };
+    vizBtn.addEventListener('mousedown', onDown);
+    vizBtn.addEventListener('mouseup', onUp);
+    vizBtn.addEventListener('mouseleave', () => { clearTimeout(pressTimer); didLongPress = false; });
+    vizBtn.addEventListener('touchstart', onDown, { passive: true });
+    vizBtn.addEventListener('touchend', onUp);
+
     // 初始化状态同步
     setTimeout(() => {
       if (window.__blogViz) window.__blogViz.init(vizOn);

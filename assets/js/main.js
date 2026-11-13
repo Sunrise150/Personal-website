@@ -23,7 +23,8 @@ function renderPostList(posts) {
     return;
   }
   list.innerHTML = posts.map(p => `
-    <a href="post.html?slug=${encodeURIComponent(p.slug)}" class="post-card">
+    <a href="post.html?slug=${encodeURIComponent(p.slug)}" class="post-card${p.pin ? ' is-pinned' : ''}">
+      ${p.pin ? '<span class="pin-badge">📌 置顶</span>' : ''}
       <div class="post-meta">
         <time>${formatDate(p.date)}</time>
         ${(p.tags || []).map(t => `<span class="tag">${t}</span>`).join('')}
@@ -73,8 +74,9 @@ async function renderPosts() {
     const res = await fetch('data/posts.json?t=' + Date.now());
     if (!res.ok) throw new Error('无法加载文章列表');
     ALL_POSTS = await res.json();
-    // 排序：日期降序；同一天按 slug 中的时间戳降序（后发布的在前）
+    // 排序：置顶 > 日期降序；同一天按 slug 中的时间戳降序（后发布的在前）
     ALL_POSTS.sort((a, b) => {
+      if (a.pin !== b.pin) return a.pin ? -1 : 1;
       const d = new Date(b.date) - new Date(a.date);
       if (d !== 0) return d;
       // 从 slug 末尾提取时间戳（base36 的 Date.now 后 5 位），后发布的更大
