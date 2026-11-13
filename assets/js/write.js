@@ -1,6 +1,7 @@
 const STORAGE_KEY = 'blog_gh_settings';
 const IMG_DIR = 'assets/images';
 const FILE_DIR = 'assets/files';
+const DRAFT_KEY = 'blog_article_draft'; // 自动保存草稿
 
 /* ============ 草稿态：暂存图片和文件，发布时一起上传到 slug 子目录 ============ */
 // 取消文章时清空，避免仓库冗余文件
@@ -281,6 +282,39 @@ function handleFiles(files) {
   }
 }
 
+/* ============ 自动保存草稿 ============ */
+function saveDraft() {
+  const draft = {
+    title: document.getElementById('title').value,
+    date: document.getElementById('date').value,
+    tags: document.getElementById('tags').value,
+    excerpt: document.getElementById('excerpt').value,
+    body: document.getElementById('body').value,
+    savedAt: Date.now()
+  };
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  } catch (e) { /* localStorage 满了 */ }
+}
+
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+
+function clearAutoDraft() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch {}
+}
+
+let _saveTimer = null;
+function onDraftInput() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(saveDraft, 800); // 停止输入 800ms 后保存
+}
+
 /* ============ 事件绑定：表单 ============ */
 document.getElementById('write-form').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -317,6 +351,7 @@ document.getElementById('write-form').addEventListener('submit', async (e) => {
     document.getElementById('excerpt').value = '';
     document.getElementById('body').value = '';
     clearDrafts();
+    clearAutoDraft(); // 发布成功，自动草稿也清掉
   } catch (err) {
     setStatus('发布失败：' + err.message, 'error');
   } finally {
@@ -399,3 +434,46 @@ if (!dateInput.value) {
 if (!getSettings()) {
   openSettings();
 }
+
+// 绑定所有表单字段 → 自动保存
+['title', 'date', 'tags', 'excerpt', 'body'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', onDraftInput);
+});
+
+// 页面加载时检测是否有草稿 → 恢复
+const savedDraft = loadDraft();
+if (savedDraft && (savedDraft.body || savedDraft.title)) {
+  const time = savedDraft.savedAt ? new Date(savedDraft.savedAt) : null;
+  const timeStr = time ? time.toLocaleString() : '';
+  const hasContent = savedDraft.body ? savedDraft.body.trim().length : 0;
+  if (hasContent > 10) {
+    const ok = confirm(`检测到自动保存的草稿（${timeStr}，${hasContent} 字）。\n点击"确定"恢复，"取消"丢弃。`);
+    if (ok) {
+      if (savedDraft.title) document.getElementById('title').value = savedDraft.title;
+      if (savedDraft.date) document.getElementById('date').value = savedDraft.date;
+      if (savedDraft.tags) document.getElementById('tags').value = savedDraft.tags;
+      if (savedDraft.excerpt) document.getElementById('excerpt').value = savedDraft.excerpt;
+      if (savedDraft.body) document.getElementById('body').value = savedDraft.body;
+      setStatus('✓ 已恢复草稿', 'ok');
+    } else {
+      clearAutoDraft();
+    }
+  }
+}
+
+// 删除草稿按钮
+document.getElementById('clear-draft-btn').addEventListener('click', () => {
+  if (!loadDraft()) {
+    setStatus('没有可删除的草稿');
+    return;
+  }
+  if (confirm('确定要删除自动保存的草稿吗？（已发布的文章不受影响）')) {
+    clearAutoDraft();
+    setStatus('✓ 草稿已删除', 'ok');
+  }
+});
+
+// 发布成功后自动清理草稿
+const origPublishSuccess = null; // 不需要，直接在 submit handler 里改
+// （下面已修改 publish 成功后的处理）

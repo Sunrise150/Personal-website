@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>幻影坦克生成器 - 日出的blog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css?v=6">
+  <script>try { var _t = localStorage.getItem('blog-theme') || 'light'; if (_t !== 'auto') document.documentElement.setAttribute('data-theme', _t); } catch(e) {}</script>
+  <script>if (window.top !== window.self) document.documentElement.classList.add('is-framed');</script>
+  <style>
+    .tank-wrap { max-width: 900px; margin: 0 auto; padding: 20px 0; }
+    .tank-title { font-family:'Noto Serif SC',serif; font-size:24px; margin:0 0 4px; }
+    .tank-desc { color:var(--text-muted); font-size:13px; margin:0 0 24px; }
+
+    .tank-pair { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:18px; }
+    @media (max-width:640px) { .tank-pair { grid-template-columns:1fr; } }
+
+    .tank-card {
+      background: var(--surface);
+      border:1px dashed var(--border);
+      border-radius:12px; padding:16px;
+      text-align:center;
+      cursor:pointer; transition: border-color .2s, background .2s;
+    }
+    .tank-card:hover { border-color: var(--accent); }
+    .tank-card.has-img { border-style:solid; cursor:default; }
+    .tank-card-label { font-size:13px; font-weight:600; margin-bottom:8px; color:var(--text); }
+    .tank-card-hint { font-size:12px; color:var(--text-muted); }
+    .tank-thumb {
+      max-width:100%; max-height:180px;
+      border-radius:8px; margin:8px 0;
+      object-fit:contain; background:rgba(0,0,0,.03);
+    }
+    .tank-remove { font-size:12px; color:#ef4444; cursor:pointer; background:none; border:none; margin-top:6px; }
+
+    .tank-ctrls {
+      background: var(--surface);
+      border:1px solid var(--border);
+      border-radius:12px; padding:16px;
+      display:flex; gap:16px; align-items:center; flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+    .tank-ctrls label { font-size:13px; color:var(--text-muted); }
+    .tank-ctrls input[type=range] { vertical-align:middle; }
+    .tank-ctrl-val { font-family:'Inter',monospace; font-size:13px; color:var(--accent); min-width:24px; display:inline-block; text-align:center; }
+
+    .tank-gen-btn {
+      flex:1; min-width:160px;
+      padding:12px 24px; border-radius:999px;
+      background: var(--accent); color:white; border:none;
+      font-size:15px; font-weight:600; cursor:pointer;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .tank-gen-btn:hover { transform: translateY(-1px); box-shadow:0 6px 18px rgba(59,130,246,.35); }
+    .tank-gen-btn:disabled { opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
+
+    .tank-preview {
+      background: var(--surface);
+      border:1px solid var(--border);
+      border-radius:12px; padding:20px;
+      text-align:center;
+    }
+    .tank-preview h3 { font-size:15px; margin:0 0 12px; color:var(--text); }
+    .tank-preview-grid {
+      display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;
+      margin-bottom:14px;
+    }
+    @media (max-width:640px) { .tank-preview-grid { grid-template-columns:1fr 1fr; } }
+    .tank-bg-box {
+      border-radius:8px; padding:20px;
+      display:flex; align-items:center; justify-content:center;
+      min-height:180px;
+    }
+    .tank-bg-white { background:#ffffff; border:1px solid var(--border); }
+    .tank-bg-black { background:#0a0a0a; border:1px solid #222; }
+    .tank-bg-transparent {
+      background-image:
+        linear-gradient(45deg, #ccc 25%, transparent 25%),
+        linear-gradient(-45deg, #ccc 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #ccc 75%),
+        linear-gradient(-45deg, transparent 75%, #ccc 75%);
+      background-size:16px 16px;
+      background-position:0 0, 0 8px, 8px -8px, -8px 0;
+    }
+    .tank-preview-img { max-width:100%; max-height:160px; border-radius:4px; }
+
+    .tank-download-row { display:flex; gap:10px; justify-content:center; }
+    .tank-download-btn {
+      padding:8px 20px; border-radius:999px;
+      background: var(--accent); color:white; border:none;
+      font-size:13px; font-weight:600; cursor:pointer;
+      text-decoration:none; display:inline-block;
+    }
+    .tank-download-btn.ghost { background:transparent; color:var(--text); border:1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="site-title" id="site-title"></a>
+      <nav>
+        <a href="index.html">文章</a>
+        <a href="write.html">写文章</a>
+        <a href="manage.html">管理</a>
+        <a href="music.html">音乐</a>
+        <a href="rooms.html">房间人数查看</a>
+        <a href="games.html">游戏</a>
+        <a href="tools.html">工具</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container tank-wrap">
+    <h1 class="tank-title">🖼️ 幻影坦克生成器</h1>
+    <p class="tank-desc">上传两张图片，生成黑白背景下切换显示的幻影坦克。白色背景看到第一张，黑色背景看到第二张。</p>
+
+    <div class="tank-pair">
+      <div class="tank-card" id="card-A">
+        <div class="tank-card-label">图片 A（白色背景下显示）</div>
+        <input type="file" id="file-A" accept="image/*" hidden>
+        <div class="tank-card-hint">点击选择图片<br>（PNG / JPG）</div>
+      </div>
+      <div class="tank-card" id="card-B">
+        <div class="tank-card-label">图片 B（黑色背景下显示）</div>
+        <input type="file" id="file-B" accept="image/*" hidden>
+        <div class="tank-card-hint">点击选择图片<br>（PNG / JPG）</div>
+      </div>
+    </div>
+
+    <div class="tank-ctrls">
+      <label>棋盘格大小：
+        <input type="range" id="checker" min="1" max="6" value="2" step="1">
+        <span class="tank-ctrl-val" id="checker-val">2px</span>
+      </label>
+      <label>黑格指数 (A 图)：
+        <input type="range" id="black-pow" min="0.3" max="2.5" value="1" step="0.1">
+        <span class="tank-ctrl-val" id="black-pow-val">1.0</span>
+      </label>
+      <label>白格指数 (B 图)：
+        <input type="range" id="white-pow" min="0.3" max="2.5" value="1" step="0.1">
+        <span class="tank-ctrl-val" id="white-pow-val">1.0</span>
+      </label>
+      <label>输出上限：
+        <input type="range" id="max-size" min="512" max="4000" value="2000" step="128">
+        <span class="tank-ctrl-val" id="max-size-val">2000</span>
+      </label>
+      <label style="cursor:pointer;">
+        <input type="checkbox" id="invert" style="vertical-align:middle;"> 交换 A/B
+      </label>
+      <label style="cursor:pointer;" title="⚠️ 彩色模式暂未完善，效果因图而异">
+        <input type="checkbox" id="colorful" style="vertical-align:middle;">
+        <span>🎨 彩色模式 <span style="color:#f97316;font-size:10px;">(实验中)</span></span>
+      </label>
+      <button class="tank-gen-btn" id="gen-btn" disabled>请先上传两张图片</button>
+    </div>
+    <p style="font-size:11px;color:var(--text-muted);margin:-8px 0 14px;">
+      指数 > 1：效果更集中（更明显）；指数 < 1：效果更均匀（更柔和）。
+      黑格指数调 A 图（白底可见），白格指数调 B 图（黑底可见）。
+      <a href="#" id="reset-params" style="color:var(--accent);">恢复默认</a>
+      <span id="color-tip" hidden style="color:#f97316;margin-left:8px;">⚠️ 彩色模式：用原图 RGB 代替灰度编码，效果不稳定，部分图可能出现颜色错位。</span>
+    </p>
+
+    <div id="preview-area" hidden>
+      <div class="tank-preview">
+        <h3>效果预览</h3>
+        <div class="tank-preview-grid">
+          <div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;text-align:center;">白色背景</div>
+            <div class="tank-bg-box tank-bg-white"><img class="tank-preview-img" id="preview-white" alt=""></div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;text-align:center;">黑色背景</div>
+            <div class="tank-bg-box tank-bg-black"><img class="tank-preview-img" id="preview-black" alt=""></div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;text-align:center;">透明背景</div>
+            <div class="tank-bg-box tank-bg-transparent"><img class="tank-preview-img" id="preview-trans" alt=""></div>
+          </div>
+        </div>
+        <div class="tank-download-row">
+          <a class="tank-download-btn" id="download-btn" download="幻影坦克.png">下载 PNG</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container"><p id="footer-text"></p></div>
+  </footer>
+
+  <script src="assets/js/config.js?v=3"></script>
+  <script>
+    document.getElementById('site-title').textContent = SITE_CONFIG.title;
+    document.getElementById('footer-text').textContent = SITE_CONFIG.footer;
+
+    /* ============ 幻影坦克生成器 ============ */
+    const imgA = { el: null, w: 0, h: 0 };
+    const imgB = { el: null, w: 0, h: 0 };
+    const checkerInput = document.getElementById('checker');
+    const checkerVal = document.getElementById('checker-val');
+    const blackPowInput = document.getElementById('black-pow');
+    const blackPowVal = document.getElementById('black-pow-val');
+    const whitePowInput = document.getElementById('white-pow');
+    const whitePowVal = document.getElementById('white-pow-val');
+    const maxSizeInput = document.getElementById('max-size');
+    const maxSizeVal = document.getElementById('max-size-val');
+    const invertInput = document.getElementById('invert');
+    const genBtn = document.getElementById('gen-btn');
+    const previewArea = document.getElementById('preview-area');
+    const previewWhite = document.getElementById('preview-white');
+    const previewBlack = document.getElementById('preview-black');
+    const previewTrans = document.getElementById('preview-trans');
+    const downloadBtn = document.getElementById('download-btn');
+
+    // 参数持久化 + 恢复默认
+    const PARAM_KEY = 'blog-tank-params';
+    const DEFAULT_PARAMS = { checker: 2, blackPow: 1, whitePow: 1, maxSize: 2000, invert: false, colorful: false };
+    let P = { ...DEFAULT_PARAMS };
+
+    function loadParams() {
+      try {
+        const raw = localStorage.getItem(PARAM_KEY);
+        if (raw) P = { ...DEFAULT_PARAMS, ...JSON.parse(raw) };
+      } catch {}
+      checkerInput.value = P.checker;
+      blackPowInput.value = P.blackPow;
+      whitePowInput.value = P.whitePow;
+      maxSizeInput.value = P.maxSize;
+      invertInput.checked = P.invert;
+      const colorfulInput = document.getElementById('colorful');
+      if (colorfulInput) colorfulInput.checked = P.colorful;
+      syncLabels();
+    }
+    function saveParams() {
+      try { localStorage.setItem(PARAM_KEY, JSON.stringify(P)); } catch {}
+    }
+    function syncLabels() {
+      checkerVal.textContent = P.checker + 'px';
+      blackPowVal.textContent = Number(P.blackPow).toFixed(1);
+      whitePowVal.textContent = Number(P.whitePow).toFixed(1);
+      maxSizeVal.textContent = P.maxSize;
+    }
+    function bindParam(input, key) {
+      input.addEventListener('input', () => {
+        const v = input.type === 'checkbox' ? input.checked : parseFloat(input.value);
+        P[key] = v;
+        syncLabels();
+        saveParams();
+      });
+    }
+    bindParam(checkerInput, 'checker');
+    bindParam(blackPowInput, 'blackPow');
+    bindParam(whitePowInput, 'whitePow');
+    bindParam(maxSizeInput, 'maxSize');
+    bindParam(invertInput, 'invert');
+    bindParam(document.getElementById('colorful'), 'colorful');
+    // 彩色模式提示
+    const colorTip = document.getElementById('color-tip');
+    document.getElementById('colorful').addEventListener('change', () => {
+      colorTip.hidden = !document.getElementById('colorful').checked;
+    });
+    colorTip.hidden = !P.colorful;
+    document.getElementById('reset-params').addEventListener('click', (e) => {
+      e.preventDefault();
+      P = { ...DEFAULT_PARAMS };
+      loadParams();
+      saveParams();
+    });
+    loadParams();
+
+    function setupCard(cardEl, inputEl, store) {
+      cardEl.addEventListener('click', () => inputEl.click());
+      inputEl.addEventListener('change', (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        loadImageFromFile(f).then(img => {
+          store.el = img;
+          store.w = img.naturalWidth;
+          store.h = img.naturalHeight;
+          renderCard(cardEl, img, () => {
+            store.el = null;
+            store.w = 0;
+            store.h = 0;
+            resetCard(cardEl, inputEl);
+            checkReady();
+          });
+          checkReady();
+        }).catch(err => {
+          alert('图片加载失败：' + err.message);
+        });
+      });
+    }
+
+    function loadImageFromFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => reject(new Error('图片解码失败'));
+          img.src = reader.result;
+        };
+        reader.onerror = () => reject(new Error('文件读取失败'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function renderCard(cardEl, img, onRemove) {
+      cardEl.classList.add('has-img');
+      cardEl.innerHTML = `
+        <div class="tank-card-label" style="position:absolute;top:8px;left:12px;">已选择</div>
+        <img class="tank-thumb" src="${img.src}" alt="">
+        <div class="tank-remove" title="移除">× 移除</div>
+      `;
+      // 保持相对定位以便 label 绝对定位
+      cardEl.style.position = 'relative';
+      cardEl.querySelector('.tank-remove').addEventListener('click', (e) => {
+        e.stopPropagation();
+        onRemove();
+      });
+    }
+
+    function resetCard(cardEl, inputEl) {
+      cardEl.classList.remove('has-img');
+      cardEl.style.position = '';
+      inputEl.value = '';
+      const label = cardEl.querySelector('.tank-card-label');
+      const hint = cardEl.querySelector('.tank-card-hint');
+      cardEl.innerHTML = '';
+      cardEl.appendChild(label);
+      cardEl.appendChild(inputEl);
+      cardEl.appendChild(hint);
+    }
+
+    function checkReady() {
+      if (imgA.el && imgB.el) {
+        genBtn.disabled = false;
+        genBtn.textContent = '生成幻影坦克';
+      } else {
+        genBtn.disabled = true;
+        genBtn.textContent = '请先上传两张图片';
+      }
+    }
+
+    setupCard(document.getElementById('card-A'), document.getElementById('file-A'), imgA);
+    setupCard(document.getElementById('card-B'), document.getElementById('file-B'), imgB);
+
+    /* 核心算法：棋盘格 + 灰度 + 透明度
+     * 对应原 Koishi 插件的 "幻影坦克测试" 命令
+     */
+    function grayscale(imgData) {
+      const d = imgData.data;
+      const g = new Float32Array(d.length / 4);
+      for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+        g[j] = (0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2]) / 255;
+      }
+      return g;
+    }
+
+    function generate() {
+      genBtn.disabled = true;
+      genBtn.textContent = '生成中…';
+
+      // 统一尺寸
+      const w = Math.max(imgA.w, imgB.w);
+      const h = Math.max(imgA.h, imgB.h);
+
+      // 用用户设定的输出上限
+      let scale = 1;
+      if (w > P.maxSize || h > P.maxSize) {
+        scale = P.maxSize / Math.max(w, h);
+      }
+      const outW = Math.round(w * scale);
+      const outH = Math.round(h * scale);
+
+      // 分别绘制 A 和 B 到临时 canvas
+      const cA = document.createElement('canvas');
+      const cB = document.createElement('canvas');
+      cA.width = outW; cA.height = outH;
+      cB.width = outW; cB.height = outH;
+      const ctxA = cA.getContext('2d');
+      const ctxB = cB.getContext('2d');
+      ctxA.drawImage(imgA.el, 0, 0, outW, outH);
+      ctxB.drawImage(imgB.el, 0, 0, outW, outH);
+
+      const gA = grayscale(ctxA.getImageData(0, 0, outW, outH));
+      const gB = grayscale(ctxB.getImageData(0, 0, outW, outH));
+
+      // 彩色模式额外拿原始 RGB（黑白模式不需要，省性能）
+      let aRGB, bRGB;
+      if (P.colorful) {
+        aRGB = ctxA.getImageData(0, 0, outW, outH).data;
+        bRGB = ctxB.getImageData(0, 0, outW, outH).data;
+      }
+
+      const checkerSize = P.checker;
+      const blackPow = P.blackPow;
+      const whitePow = P.whitePow;
+      const invert = P.invert;
+
+      const outCanvas = document.createElement('canvas');
+      outCanvas.width = outW; outCanvas.height = outH;
+      const octx = outCanvas.getContext('2d');
+      const outData = octx.createImageData(outW, outH);
+      const outPixels = outData.data;
+
+      const checkerCanvas = document.createElement('canvas');
+      checkerCanvas.width = outW; checkerCanvas.height = outH;
+      const cctx = checkerCanvas.getContext('2d');
+      cctx.fillStyle = '#000';
+      cctx.fillRect(0, 0, outW, outH);
+      cctx.fillStyle = '#fff';
+      for (let y = 0; y < outH; y += checkerSize) {
+        for (let x = 0; x < outW; x += checkerSize) {
+          if ((Math.floor(x / checkerSize) % 2 === Math.floor(y / checkerSize) % 2) === false) {
+            cctx.fillRect(x, y, checkerSize, checkerSize);
+          }
+        }
+      }
+      const checkerData = cctx.getImageData(0, 0, outW, outH).data;
+
+      for (let y = 0; y < outH; y++) {
+        for (let x = 0; x < outW; x++) {
+          const i = y * outW + x;
+          const pi = i * 4;
+
+          let isBlack = checkerData[pi] === 0;
+          if (invert) isBlack = !isBlack;
+
+          const grayA = gA[i];
+          const grayB = gB[i];
+
+          if (P.colorful) {
+            /* ===== 彩色模式（实验中） =====
+             * 黑格 → 填 A 图原始 RGB，alpha = (1 - A 亮度)
+             * 白格 → 填 B 图原始 RGB，alpha = B 亮度
+             * 白底时白格融掉 → 黑格透出 A 的彩色像素
+             * 黑底时黑格融掉 → 白格透出 B 的彩色像素
+             */
+            if (isBlack) {
+              outPixels[pi]     = aRGB[pi];
+              outPixels[pi + 1] = aRGB[pi + 1];
+              outPixels[pi + 2] = aRGB[pi + 2];
+              outPixels[pi + 3] = Math.round((1 - Math.pow(grayA, blackPow)) * 255);
+            } else {
+              outPixels[pi]     = bRGB[pi];
+              outPixels[pi + 1] = bRGB[pi + 1];
+              outPixels[pi + 2] = bRGB[pi + 2];
+              outPixels[pi + 3] = Math.round(Math.pow(grayB, whitePow) * 255);
+            }
+          } else {
+            /* ===== 黑白模式（稳定） =====
+             * 棋盘格填纯黑/纯白
+             * alpha 编码灰度值
+             */
+            outPixels[pi]     = checkerData[pi];
+            outPixels[pi + 1] = checkerData[pi + 1];
+            outPixels[pi + 2] = checkerData[pi + 2];
+            if (isBlack) {
+              outPixels[pi + 3] = Math.round((1 - Math.pow(grayA, blackPow)) * 255);
+            } else {
+              outPixels[pi + 3] = Math.round(Math.pow(grayB, whitePow) * 255);
+            }
+          }
+        }
+      }
+
+      octx.putImageData(outData, 0, 0);
+
+      const dataUrl = outCanvas.toDataURL('image/png');
+      previewWhite.src = dataUrl;
+      previewBlack.src = dataUrl;
+      previewTrans.src = dataUrl;
+      downloadBtn.href = dataUrl;
+      previewArea.hidden = false;
+
+      genBtn.disabled = false;
+      genBtn.textContent = '重新生成';
+    }
+
+    genBtn.addEventListener('click', generate);
+  </script>
+</body>
+</html>

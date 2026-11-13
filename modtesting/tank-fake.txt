@@ -1,0 +1,627 @@
+import { Context, Schema,h } from 'koishi'
+import axios from 'axios'
+import { createCanvas, loadImage } from 'canvas'
+
+export const name = 'two-to-true'
+
+export interface Config {
+  checkerboardSize?: number
+  dayIntensity?: number
+  nightIntensity?: number
+  blendMode?: 'multiply' | 'screen' | 'overlay'
+}
+
+export const Config: Schema<Config> = Schema.object({
+  checkerboardSize: Schema.number().default(1).description('棋盘格大小（像素）'),
+  dayIntensity: Schema.number().default(0.7).description('日间模式效果强度'),
+  nightIntensity: Schema.number().default(0.8).description('夜间模式效果强度'),
+  blendMode: Schema.union(['multiply', 'screen', 'overlay']).default('overlay').description('混合模式')
+})
+
+export function apply(ctx: Context, config: Config) {
+
+  ctx.command('日夜模式图片', '创建在QQ日夜模式下显示不同效果的图片')
+    .usage('根据提示上传两张图片，生成日夜模式切换效果')
+    .action(async ({ session }) => {
+      try {
+        // 请求日间模式图片
+        await session.send(['请发送日间模式下显示的图片', '输入"取消"可终止操作'].join('\n'))
+        
+        const dayResponse = await session.prompt(30000)
+        if (!dayResponse) return '操作已取消（超时无响应）'
+        if (dayResponse.trim() === '取消') return '操作已取消'
+        
+        // 提取日间图片URL
+        const dayImageUrl = extractImageUrl(dayResponse)
+        if (!dayImageUrl) return '未检测到图片，请发送图片而非文字或链接'
+        
+        // 请求夜间模式图片
+        await session.send(['请发送夜间模式下显示的图片', '输入"取消"可终止操作'].join('\n'))
+        
+        const nightResponse = await session.prompt(30000)
+        if (!nightResponse) return '操作已取消（超时无响应）'
+        if (nightResponse.trim() === '取消') return '操作已取消'
+        
+        // 提取夜间图片URL
+        const nightImageUrl = extractImageUrl(nightResponse)
+        if (!nightImageUrl) return '未检测到图片，请发送图片而非文字或链接'
+        
+        await session.send('正在生成日夜模式特效图片，请稍候...')
+        
+        // 下载图片
+        const [dayResponseData, nightResponseData] = await Promise.all([
+          axios.get(dayImageUrl, { 
+            responseType: 'arraybuffer',
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'Referer': 'https://qq.com/'
+            }
+          }),
+          axios.get(nightImageUrl, { 
+            responseType: 'arraybuffer',
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'Referer': 'https://qq.com/'
+            }
+          })
+        ])
+        
+        const dayImageBuffer = Buffer.from(dayResponseData.data)
+        const nightImageBuffer = Buffer.from(nightResponseData.data)
+        
+        // 加载图片
+        const dayImg = await loadImage(dayImageBuffer)
+        const nightImg = await loadImage(nightImageBuffer)
+        
+        // 确保两张图片尺寸相同
+        const width = Math.max(dayImg.width, nightImg.width)
+        const height = Math.max(dayImg.height, nightImg.height)
+        
+        // 创建画布
+        const canvas = createCanvas(width, height)
+        //将ctx会话属性应用到canvas上
+        const ctx = canvas.getContext('2d')
+        
+        // 先绘制日间图片作为基础
+        ctx.drawImage(dayImg, 0, 0, width, height)
+        
+        // 获取日间图片数据
+        const imageData = ctx.getImageData(0, 0, width, height)
+        const data = imageData.data
+        
+        // 加载夜间图片到另一个画布
+        const tempCanvas = createCanvas(width, height)
+        const tempCtx = tempCanvas.getContext('2d')
+        tempCtx.drawImage(nightImg, 0, 0, width, height)
+        
+        // 获取夜间图片数据
+        const nightImageData = tempCtx.getImageData(0, 0, width, height)
+        const nightData = nightImageData.data
+        
+        // 应用混合模式
+        for (let i = 0; i < data.length; i += 4) {
+          const r1 = data[i] / 255
+          const g1 = data[i + 1] / 255
+          const b1 = data[i + 2] / 255
+          
+          const r2 = nightData[i] / 255
+          const g2 = nightData[i + 1] / 255
+          const b2 = nightData[i + 2] / 255
+          
+          let r, g, b
+          
+          // 根据选择的混合模式计算新颜色
+          switch (config.blendMode) {
+            case 'multiply':
+              // 正片叠底模式 - 在白色背景下显示日间图片，在黑色背景下显示夜间图片
+              r = r1 * r2 * 255
+              g = g1 * g2 * 255
+              b = b1 * b2 * 255
+              break
+              
+            case 'screen':
+              // 屏幕模式 - 在黑色背景下显示日间图片，在白色背景下显示夜间图片
+              r = (1 - (1 - r1) * (1 - r2)) * 255
+              g = (1 - (1 - g1) * (1 - g2)) * 255
+              b = (1 - (1 - b1) * (1 - b2)) * 255
+              break
+              
+            case 'overlay':
+            default:
+              // 叠加模式 - 结合正片叠底和屏幕模式
+              r = (r1 < 0.5 ? 2 * r1 * r2 : 1 - 2 * (1 - r1) * (1 - r2)) * 255
+              g = (g1 < 0.5 ? 2 * g1 * g2 : 1 - 2 * (1 - g1) * (1 - g2)) * 255
+              b = (b1 < 0.5 ? 2 * b1 * b2 : 1 - 2 * (1 - b1) * (1 - b2)) * 255
+              break
+          }
+          
+          // 应用强度调整
+          const dayWeight = config.dayIntensity
+          const nightWeight = config.nightIntensity
+          
+          // 最终颜色是两种效果的加权平均
+          data[i] = Math.min(255, Math.max(0, 
+            (r * dayWeight + nightData[i] * nightWeight) / (dayWeight + nightWeight)
+          ))
+          
+          data[i + 1] = Math.min(255, Math.max(0, 
+            (g * dayWeight + nightData[i + 1] * nightWeight) / (dayWeight + nightWeight)
+          ))
+          
+          data[i + 2] = Math.min(255, Math.max(0, 
+            (b * dayWeight + nightData[i + 2] * nightWeight) / (dayWeight + nightWeight)
+          ))
+        }
+        
+        // 将处理后的像素数据放回画布
+        ctx.putImageData(imageData, 0, 0)
+        
+        // 转换为Buffer
+        const resultBuffer = canvas.toBuffer()
+        
+        // 发送结果图片
+        return await session.send([
+          '日夜模式特效图片已生成！',
+          '在QQ日间模式（白色背景）下您会看到更多第一张图片的效果，',
+          '在QQ夜间模式（黑色背景）下您会看到更多第二张图片的效果。',
+          h.image(resultBuffer, 'image/png')
+        ])
+        
+      } catch (error) {
+        console.error('处理图片时出错:', error)
+        return '处理图片时出现错误，请确保提供了有效的图片'
+      }
+    })
+
+  //本质方法是依据人眼自动补齐的原理，将图像的像素尽可能地分割为极小，然后在不同像素下填入两个图片
+  //的相关灰度值进入其中，以此构成的幻影坦克
+  //其关键不在于如何混合，而在于如何分割，同时其也不具备什么判断背景显示状态的方法
+  //而是根据，背景图如果为黑的时候，黑像素自然更凸显，而白像素则更暗，反之亦然
+  //如果是彩色，RGB三层的彩色灰度值
+  ctx.command('幻影坦克测试', '创建背景色切换图片')
+    .usage('根据提示上传两张图片，生成背景色切换效果')
+    .action(async ({ session }) => {
+      try {
+        // 请求第一张图片（白色背景时显示）
+        await session.send(['请发送第一张图片', '输入"取消"可终止操作'].join('\n'))
+        
+        const firstResponse = await session.prompt(30000)
+        if (!firstResponse) return '操作已取消（超时无响应）'
+        if (firstResponse.trim() === '取消') return '操作已取消'
+        
+        // 提取第一张图片URL
+        let firstImageUrl = null
+        if (firstResponse.startsWith('http')) {
+          firstImageUrl = firstResponse
+        } else {
+          const qqMatch = firstResponse.match(/<img\s+src="([^"]+)"[^>]*>/)
+          if (qqMatch && qqMatch[1]) {
+            firstImageUrl = qqMatch[1]
+          } else {
+            const cqMatch = firstResponse.match(/\[CQ:image,file=([^,]+),url=([^\]]+)\]/)
+            if (cqMatch && cqMatch[2]) {
+              firstImageUrl = cqMatch[2]
+            } else {
+              const altMatch = firstResponse.match(/\[CQ:image,url=([^\]]+)\]/)
+              if (altMatch && altMatch[1]) {
+                firstImageUrl = altMatch[1]
+              }
+            }
+          }
+        }
+        
+        if (!firstImageUrl) return '未检测到图片，请发送图片而非文字或链接'
+        
+        // 请求第二张图片（黑色背景时显示）
+        await session.send(['请发送第二张图片', '输入"取消"可终止操作'].join('\n'))
+        
+        const secondResponse = await session.prompt(30000)
+        if (!secondResponse) return '操作已取消（超时无响应）'
+        if (secondResponse.trim() === '取消') return '操作已取消'
+        
+        // 提取第二张图片URL
+        let secondImageUrl = null
+        if (secondResponse.startsWith('http')) {
+          secondImageUrl = secondResponse
+        } else {
+          const qqMatch = secondResponse.match(/<img\s+src="([^"]+)"[^>]*>/)
+          if (qqMatch && qqMatch[1]) {
+            secondImageUrl = qqMatch[1]
+          } else {
+            const cqMatch = secondResponse.match(/\[CQ:image,file=([^,]+),url=([^\]]+)\]/)
+            if (cqMatch && cqMatch[2]) {
+              secondImageUrl = cqMatch[2]
+            } else {
+              const altMatch = secondResponse.match(/\[CQ:image,url=([^\]]+)\]/)
+              if (altMatch && altMatch[1]) {
+                secondImageUrl = altMatch[1]
+              }
+            }
+          }
+        }
+        
+        if (!secondImageUrl) return '未检测到图片，请发送图片而非文字或链接'
+        
+        
+        // 下载图片
+        const [firstResponseData, secondResponseData] = await Promise.all([
+          axios.get(firstImageUrl, { responseType: 'arraybuffer',
+            headers:{
+              'Referer': 'https://qq.com/', // 或其他合适的 Referer
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' // 常见浏览器 UA
+            }
+           }),
+          axios.get(secondImageUrl, { responseType: 'arraybuffer',
+            headers:{
+              'Referer': 'https://qq.com/', // 或其他合适的 Referer
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' // 常见浏览器 UA
+            }
+           })
+        ])
+        
+        const firstImageBuffer = Buffer.from(firstResponseData.data)
+        const secondImageBuffer = Buffer.from(secondResponseData.data)
+        
+        // 加载图片
+        const firstImg = await loadImage(firstImageBuffer)
+        const secondImg = await loadImage(secondImageBuffer)
+        
+        // 确保两张图片尺寸相同
+        const width = Math.max(firstImg.width, secondImg.width)
+        const height = Math.max(firstImg.height, secondImg.height)
+        
+        // 创建画布
+        const canvas = createCanvas(width, height)
+        
+        const ctx = canvas.getContext('2d')
+        
+        // 创建棋盘格背景
+        //通过/2方法依次判断该填入黑像素还是白像素
+        const checkerSize = config.checkerboardSize
+        for (let y = 0; y < height; y += checkerSize) {
+          for (let x = 0; x < width; x += checkerSize) {
+            const isBlack = Math.floor(x / checkerSize) % 2 === Math.floor(y / checkerSize) % 2
+            ctx.fillStyle = isBlack ? '#000000' : '#ffffff'
+            ctx.fillRect(x, y, checkerSize, checkerSize)
+          }
+        }
+        
+        // 获取棋盘格图像数据
+        const checkerData = ctx.getImageData(0, 0, width, height)
+        const checkerPixels = checkerData.data
+        
+        // 加载第一张图片到另一个画布并转换为灰度图
+        const firstCanvas = createCanvas(width, height)
+        const firstCtx = firstCanvas.getContext('2d')
+        firstCtx.drawImage(firstImg, 0, 0, width, height)
+        const firstImageData = firstCtx.getImageData(0, 0, width, height)
+        const firstPixels = firstImageData.data
+        
+        // 计算第一张图片的灰度值
+        const firstGrayscale = new Float32Array(width * height)
+        for (let i = 0, j = 0; i < firstPixels.length; i += 4, j++) {
+          const r = firstPixels[i]
+          const g = firstPixels[i + 1]
+          const b = firstPixels[i + 2]
+          firstGrayscale[j] = (0.299 * r + 0.587 * g + 0.114 * b) / 255 // 归一化到0-1
+        }
+        
+        // 加载第二张图片到另一个画布并转换为灰度图
+        const secondCanvas = createCanvas(width, height)
+        const secondCtx = secondCanvas.getContext('2d')
+        secondCtx.drawImage(secondImg, 0, 0, width, height)
+        const secondImageData = secondCtx.getImageData(0, 0, width, height)
+        const secondPixels = secondImageData.data
+        
+        // 计算第二张图片的灰度值
+        const secondGrayscale = new Float32Array(width * height)
+        for (let i = 0, j = 0; i < secondPixels.length; i += 4, j++) {
+          const r = secondPixels[i]
+          const g = secondPixels[i + 1]
+          const b = secondPixels[i + 2]
+          secondGrayscale[j] = (0.299 * r + 0.587 * g + 0.114 * b) / 255 // 归一化到0-1
+        }
+        
+        // 创建最终图像 - 使用棋盘格颜色，但根据规则设置透明度
+        const finalImageData = ctx.createImageData(width, height)
+        const finalPixels = finalImageData.data
+        
+        for (let y = 0, i = 0; y < height; y++) {
+          for (let x = 0; x < width; x++, i++) {
+            const pixelIndex = i * 4
+            const checkerIndex = (y * width + x) * 4
+            
+            // 判断当前像素在棋盘格中是黑色还是白色
+            const isBlack = checkerPixels[checkerIndex] === 0 // 黑色像素的R值为0
+            
+            // 获取当前位置的灰度值
+            const grayA = firstGrayscale[i]
+            const grayB = secondGrayscale[i]
+            
+            // 设置颜色为棋盘格颜色
+            finalPixels[pixelIndex] = checkerPixels[checkerIndex]     // R
+            finalPixels[pixelIndex + 1] = checkerPixels[checkerIndex + 1] // G
+            finalPixels[pixelIndex + 2] = checkerPixels[checkerIndex + 2] // B
+            
+            // 根据棋盘格颜色设置透明度
+            if (isBlack) {
+              // 黑色像素：透明度 = 1 - A的灰度值
+              finalPixels[pixelIndex + 3] = Math.round((1 - grayA) * 255)
+            } else {
+              // 白色像素：透明度 = B的灰度值
+              finalPixels[pixelIndex + 3] = Math.round(grayB * 255)
+            }
+          }
+        }
+        
+        // 将处理后的图像数据放回画布
+        ctx.putImageData(finalImageData, 0, 0)
+        
+        // 转换为Buffer
+        const resultBuffer = canvas.toBuffer()
+        
+        // 发送结果图片
+        return await session.send([
+          //resultBuffer,
+          h.image(resultBuffer,'image/png')
+        ].join('\n'))
+        
+      } catch (error) {
+        console.error('处理图片时出错:', error)
+        return '处理图片时出现错误，请确保提供了有效的图片'
+      }
+    })
+
+    ctx.command('彩色幻影坦克', '创建表层明显的彩色背景切换图片')
+    .usage('根据提示上传两张彩色图片，第一张作为表层，第二张作为里层')
+    .action(async ({ session }) => {
+      try {
+        // 请求第一张图片（表层，白色背景时显示）
+        await session.send(['请发送第一张图片（将作为表层，白色背景时显示）', '输入"取消"可终止操作'].join('\n'))
+        
+        const firstResponse = await session.prompt(30000)
+        if (!firstResponse) return '操作已取消（超时无响应）'
+        if (firstResponse.trim() === '取消') return '操作已取消'
+        
+        // 提取第一张图片URL
+        const firstImageUrl = extractImageUrl(firstResponse)
+        if (!firstImageUrl) return '未检测到图片，请发送图片而非文字或链接'
+        
+        // 请求第二张图片（里层，黑色背景时显示）
+        await session.send(['请发送第二张图片（将作为里层，黑色背景时显示）', '输入"取消"可终止操作'].join('\n'))
+        
+        const secondResponse = await session.prompt(30000)
+        if (!secondResponse) return '操作已取消（超时无响应）'
+        if (secondResponse.trim() === '取消') return '操作已取消'
+        
+        // 提取第二张图片URL
+        const secondImageUrl = extractImageUrl(secondResponse)
+        if (!secondImageUrl) return '未检测到图片，请发送图片而非文字或链接'
+        
+        // 下载图片
+        const [firstResponseData, secondResponseData] = await Promise.all([
+          axios.get(firstImageUrl, { 
+            responseType: 'arraybuffer',
+            headers: {
+              'Referer': 'https://qq.com/',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+          }),
+          axios.get(secondImageUrl, { 
+            responseType: 'arraybuffer',
+            headers: {
+              'Referer': 'https://qq.com/',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+          })
+        ])
+        
+        const firstImageBuffer = Buffer.from(firstResponseData.data)
+        const secondImageBuffer = Buffer.from(secondResponseData.data)
+        
+        // 加载图片
+        const firstImg = await loadImage(firstImageBuffer)
+        const secondImg = await loadImage(secondImageBuffer)
+        
+        // 确保两张图片尺寸相同
+        const width = Math.max(firstImg.width, secondImg.width)
+        const height = Math.max(firstImg.height, secondImg.height)
+        
+        // 创建画布
+        const canvas = createCanvas(width, height)
+        const ctx = canvas.getContext('2d')
+        
+        // 加载第一张图片（表层）
+        const firstCanvas = createCanvas(width, height)
+        const firstCtx = firstCanvas.getContext('2d')
+        firstCtx.drawImage(firstImg, 0, 0, width, height)
+        const firstImageData = firstCtx.getImageData(0, 0, width, height)
+        const firstPixels = firstImageData.data
+        
+        // 处理第一张图片：轻微降低饱和度，提升对比度使表层更明显
+        for (let i = 0; i < firstPixels.length; i += 4) {
+          const r = firstPixels[i]
+          const g = firstPixels[i + 1]
+          const b = firstPixels[i + 2]
+          
+          // 转换为HSL进行调整
+          const hsl = rgbToHsl(r, g, b)
+          
+          // 轻微降低饱和度（乘以0.6-0.8）
+          hsl[1] = hsl[1] * 0.7
+          
+          // 提升明度（增加0.1-0.2）
+          hsl[2] = Math.min(1, hsl[2] + 0.15)
+          
+          // 转换回RGB
+          const newRgb = hslToRgb(hsl[0], hsl[1], hsl[2])
+          
+          firstPixels[i] = newRgb[0]
+          firstPixels[i + 1] = newRgb[1]
+          firstPixels[i + 2] = newRgb[2]
+        }
+        firstCtx.putImageData(firstImageData, 0, 0)
+        
+        // 加载第二张图片（里层）
+        const secondCanvas = createCanvas(width, height)
+        const secondCtx = secondCanvas.getContext('2d')
+        secondCtx.drawImage(secondImg, 0, 0, width, height)
+        const secondImageData = secondCtx.getImageData(0, 0, width, height)
+        const secondPixels = secondImageData.data
+        
+        // 处理第二张图片：大幅降低饱和度和明度，使里层更隐蔽
+        for (let i = 0; i < secondPixels.length; i += 4) {
+          const r = secondPixels[i]
+          const g = secondPixels[i + 1]
+          const b = secondPixels[i + 2]
+          
+          // 转换为HSL进行调整
+          const hsl = rgbToHsl(r, g, b)
+          
+          // 大幅降低饱和度（乘以0.2-0.4）
+          hsl[1] = hsl[1] * 0.3
+          
+          // 大幅降低明度（减少0.3-0.5）
+          hsl[2] = Math.max(0, hsl[2] - 0.4)
+          
+          // 转换回RGB
+          const newRgb = hslToRgb(hsl[0], hsl[1], hsl[2])
+          
+          secondPixels[i] = newRgb[0]
+          secondPixels[i + 1] = newRgb[1]
+          secondPixels[i + 2] = newRgb[2]
+        }
+        secondCtx.putImageData(secondImageData, 0, 0)
+        
+        // 重新获取处理后的图像数据
+        const processedFirstImageData = firstCtx.getImageData(0, 0, width, height)
+        const processedFirstPixels = processedFirstImageData.data
+        const processedSecondImageData = secondCtx.getImageData(0, 0, width, height)
+        const processedSecondPixels = processedSecondImageData.data
+        
+        // 创建最终图像数据
+        const finalImageData = ctx.createImageData(width, height)
+        const finalPixels = finalImageData.data
+        
+        // 优化的幻影坦克公式 - 使表层更明显，里层更隐蔽
+        for (let i = 0; i < finalPixels.length; i += 4) {
+          const r1 = processedFirstPixels[i]     // 处理后的表层图 R
+          const g1 = processedFirstPixels[i + 1] // 处理后的表层图 G
+          const b1 = processedFirstPixels[i + 2] // 处理后的表层图 B
+          
+          const r2 = processedSecondPixels[i]     // 处理后的里层图 R
+          const g2 = processedSecondPixels[i + 1] // 处理后的里层图 G
+          const b2 = processedSecondPixels[i + 2] // 处理后的里层图 B
+          
+          // 计算表层图的亮度（用于控制透明度）
+          const luminance1 = 0.299 * r1 + 0.587 * g1 + 0.114 * b1
+          
+          // 计算里层图的亮度（用于混合）
+          const luminance2 = 0.299 * r2 + 0.587 * g2 + 0.114 * b2
+          
+          // 优化的幻影坦克核心公式
+          // 目标：表层在白色背景时明显，里层在黑色背景时显现但不明显
+          
+          // 计算alpha值 - 基于表层亮度，但进行非线性变换使表层更明显
+          const alpha = Math.pow(luminance1 / 255, 0.7) // 使用幂函数增强表层对比度
+          
+          // 计算最终颜色 - 使表层在混合后仍保持较高对比度
+          finalPixels[i] = Math.round(r2 * alpha)           // R
+          finalPixels[i + 1] = Math.round(g2 * alpha)       // G
+          finalPixels[i + 2] = Math.round(b2 * alpha)       // B
+          
+          // 计算透明度 - 基于里层亮度，但降低其影响
+          finalPixels[i + 3] = Math.round(255 * (1 - Math.pow(luminance2 / 255, 1.5))) // 使用幂函数减弱里层影响
+        }
+        
+        // 将处理后的图像数据放回画布
+        ctx.putImageData(finalImageData, 0, 0)
+        
+        // 转换为Buffer
+        const resultBuffer = canvas.toBuffer()
+        
+        // 发送结果图片和说明
+        return await session.send([
+          '彩色幻影坦克（表层版）生成完成！',
+          '处理说明：',
+          '- 第一张图片（表层）：轻微降低饱和度，提升明度，使白色背景下更明显',
+          '- 第二张图片（里层）：大幅降低饱和度和明度，使黑色背景下显现但不突兀',
+          '- 使用优化公式增强表层对比度，减弱里层影响',
+          '在白色背景下查看第一张图片，在黑色背景下查看第二张图片',
+          h.image(resultBuffer, 'image/png')
+        ].join('\n'))
+        
+      } catch (error) {
+        console.error('处理彩色图片时出错:', error)
+        return '处理彩色图片时出现错误，请确保提供了有效的彩色图片'
+      }
+    })
+  }
+
+// RGB转HSL辅助函数
+function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+  r /= 255
+  g /= 255
+  b /= 255
+  
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  let h = 0, s = 0, l = (max + min) / 2
+  
+  if (max !== min) {
+    const d = max - min
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+    
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break
+      case g: h = (b - r) / d + 2; break
+      case b: h = (r - g) / d + 4; break
+    }
+    
+    h /= 6
+  }
+  
+  return [h, s, l]
+}
+
+// HSL转RGB辅助函数
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  let r: number, g: number, b: number
+  
+  if (s === 0) {
+    r = g = b = l
+  } else {
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1
+      if (t > 1) t -= 1
+      if (t < 1/6) return p + (q - p) * 6 * t
+      if (t < 1/2) return q
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6
+      return p
+    }
+    
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s
+    const p = 2 * l - q
+    
+    r = hue2rgb(p, q, h + 1/3)
+    g = hue2rgb(p, q, h)
+    b = hue2rgb(p, q, h - 1/3)
+  }
+  
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)]
+}
+
+function extractImageUrl(input: string): string | null {
+  if (input.startsWith('http')) return input
+  
+  const qqMatch = input.match(/<img\s+src="([^"]+)"[^>]*>/)
+  if (qqMatch && qqMatch[1]) return qqMatch[1]
+  
+  const cqMatch = input.match(/\[CQ:image,file=([^,]+),url=([^\]]+)\]/)
+  if (cqMatch && cqMatch[2]) return cqMatch[2]
+  
+  const altMatch = input.match(/\[CQ:image,url=([^\]]+)\]/)
+  if (altMatch && altMatch[1]) return altMatch[1]
+  
+  return null
+}

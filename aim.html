@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>瞄准训练 - 日出的blog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css?v=6">
+  <script>try { var _t = localStorage.getItem('blog-theme') || 'light'; if (_t !== 'auto') document.documentElement.setAttribute('data-theme', _t); } catch(e) {}</script>
+  <script>if (window.top !== window.self) document.documentElement.classList.add('is-framed');</script>
+  <style>
+    .aim-wrap { max-width: 900px; margin: 0 auto; padding: 20px 0; }
+    .aim-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:12px; }
+    .aim-stats { display:flex; gap:20px; font-family:'Inter',monospace; font-size:14px; }
+    .aim-stat { text-align:center; }
+    .aim-stat-label { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; }
+    .aim-stat-val { font-size:22px; font-weight:700; color:var(--accent); }
+    .aim-arena {
+      position:relative;
+      width:100%;
+      height:480px;
+      background: var(--surface);
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:hidden;
+      cursor:crosshair;
+      user-select:none;
+    }
+    .aim-ball {
+      position:absolute;
+      border-radius:50%;
+      background: radial-gradient(circle at 30% 30%, #fca5a5, #ef4444 60%, #b91c1c);
+      box-shadow: 0 0 18px rgba(239,68,68,0.55), inset -3px -4px 8px rgba(0,0,0,.2);
+      cursor:crosshair;
+      transition: transform .06s ease-out;
+      animation: ballIn .18s ease-out;
+    }
+    .aim-ball::after {
+      content:''; position:absolute;
+      top:18%; left:22%;
+      width:22%; height:22%;
+      background:rgba(255,255,255,.6);
+      border-radius:50%;
+      filter: blur(1px);
+    }
+    @keyframes ballIn {
+      from { transform: scale(0); opacity:0; }
+      to { transform: scale(1); opacity:1; }
+    }
+    .aim-ball.hit {
+      animation: ballHit .22s ease-out forwards;
+      pointer-events:none;
+    }
+    @keyframes ballHit {
+      0% { transform: scale(1); opacity:1; }
+      40% { transform: scale(1.5); opacity:.8; }
+      100% { transform: scale(2.2); opacity:0; }
+    }
+    .aim-miss-flash {
+      position:absolute; pointer-events:none;
+      color:#ef4444; font-weight:600; font-size:13px;
+      animation: missUp .7s ease-out forwards;
+    }
+    @keyframes missUp {
+      0% { opacity:1; transform: translateY(0); }
+      100% { opacity:0; transform: translateY(-24px); }
+    }
+    .aim-start-screen {
+      position:absolute; inset:0;
+      display:flex; flex-direction:column;
+      justify-content:center; align-items:center;
+      gap:18px; text-align:center;
+      background: linear-gradient(135deg, rgba(239,68,68,.06), rgba(59,130,246,.06));
+      backdrop-filter: blur(2px);
+      z-index:5;
+    }
+    .aim-start-screen h2 {
+      font-family:'Noto Serif SC',serif; font-size:26px; margin:0;
+    }
+    .aim-start-screen p { color:var(--text-muted); margin:0; font-size:14px; }
+    .aim-btn {
+      padding:12px 32px; font-size:16px; font-weight:600;
+      background: var(--accent); color:white;
+      border:none; border-radius:999px;
+      cursor:pointer; transition: transform .15s, box-shadow .15s;
+    }
+    .aim-btn:hover { transform: translateY(-1px); box-shadow:0 6px 18px rgba(59,130,246,.35); }
+    .aim-difficulty { display:flex; gap:10px; margin-top:6px; }
+    .aim-difficulty button {
+      padding:6px 16px; border-radius:999px;
+      border:1px solid var(--border); background:var(--surface);
+      color:var(--text); font-size:13px; cursor:pointer;
+      transition: all .15s;
+    }
+    .aim-difficulty button.active {
+      border-color:var(--accent); color:var(--accent);
+      background: color-mix(in oklab, var(--accent) 12%, var(--surface));
+    }
+    .aim-best { font-size:12px; color:var(--text-muted); }
+    .aim-controls { display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
+    .aim-ghost {
+      position:absolute; pointer-events:none; z-index:2;
+      width:30px; height:30px; border-radius:50%;
+      border:2px solid rgba(239,68,68,.4);
+      transform: translate(-50%,-50%);
+      transition: opacity .2s;
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="site-title" id="site-title"></a>
+      <nav>
+        <a href="index.html">文章</a>
+        <a href="write.html">写文章</a>
+        <a href="manage.html">管理</a>
+        <a href="music.html">音乐</a>
+        <a href="rooms.html">房间人数查看</a>
+        <a href="games.html">游戏</a>
+        <a href="tools.html">工具</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container aim-wrap">
+    <div class="aim-header">
+      <div class="aim-stats">
+        <div class="aim-stat"><div class="aim-stat-label">命中</div><div class="aim-stat-val" id="aim-hits">0</div></div>
+        <div class="aim-stat"><div class="aim-stat-label">失误</div><div class="aim-stat-val" id="aim-misses" style="color:#ef4444">0</div></div>
+        <div class="aim-stat"><div class="aim-stat-label">命中率</div><div class="aim-stat-val" id="aim-acc" style="font-size:18px">—</div></div>
+        <div class="aim-stat"><div class="aim-stat-label">最佳</div><div class="aim-stat-val" id="aim-best" style="font-size:18px;color:#22c55e">0</div></div>
+      </div>
+      <div class="aim-controls">
+        <div class="aim-difficulty" id="aim-diff">
+          <button data-diff="easy">简单</button>
+          <button data-diff="normal" class="active">普通</button>
+          <button data-diff="hard">困难</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="aim-arena" id="aim-arena">
+      <div class="aim-start-screen" id="aim-start">
+        <h2>🎯 瞄准训练</h2>
+        <p>点出现的红色小球，不要点空白处。无限模式，看你能点到多少个！</p>
+        <button class="aim-btn" id="aim-go">开始</button>
+        <div class="aim-best">历史最高命中：<span id="aim-best-label">0</span></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container"><p id="footer-text"></p></div>
+  </footer>
+
+  <script src="assets/js/config.js?v=3"></script>
+  <script>
+    document.getElementById('site-title').textContent = SITE_CONFIG.title;
+    document.getElementById('footer-text').textContent = SITE_CONFIG.footer;
+
+    /* ============ 瞄准训练 ============ */
+    const arena = document.getElementById('aim-arena');
+    const startScreen = document.getElementById('aim-start');
+    const hitsEl = document.getElementById('aim-hits');
+    const missesEl = document.getElementById('aim-misses');
+    const accEl = document.getElementById('aim-acc');
+    const bestEl = document.getElementById('aim-best');
+    const bestLabelEl = document.getElementById('aim-best-label');
+
+    let playing = false;
+    let hits = 0, misses = 0;
+    let activeBalls = [];
+    let spawnTimer = null;
+
+    // 难度配置
+    const DIFF = {
+      easy:   { size: 38, spawnMin: 700, spawnMax: 1100, lifespan: 2600, maxBalls: 3 },
+      normal: { size: 28, spawnMin: 500, spawnMax: 850,  lifespan: 1800, maxBalls: 4 },
+      hard:   { size: 20, spawnMin: 350, spawnMax: 600,  lifespan: 1300, maxBalls: 5 }
+    };
+    let diffKey = 'normal';
+    let cfg = DIFF[diffKey];
+
+    // 历史最佳
+    const BEST_KEY = 'aim-best-hits';
+    function getBest() { try { return parseInt(localStorage.getItem(BEST_KEY)) || 0; } catch { return 0; } }
+    function setBest(v) { try { localStorage.setItem(BEST_KEY, String(v)); } catch {} }
+    let best = getBest();
+    bestEl.textContent = best;
+    bestLabelEl.textContent = best;
+
+    function updateStats() {
+      hitsEl.textContent = hits;
+      missesEl.textContent = misses;
+      const total = hits + misses;
+      if (total > 0) {
+        accEl.textContent = Math.round(hits / total * 100) + '%';
+      } else {
+        accEl.textContent = '—';
+      }
+      // 破纪录
+      if (hits > best) {
+        best = hits;
+        setBest(best);
+        bestEl.textContent = best;
+        bestLabelEl.textContent = best;
+      }
+    }
+
+    function randBallPos(size) {
+      const w = arena.clientWidth, h = arena.clientHeight;
+      const margin = size / 2 + 10;
+      return {
+        x: margin + Math.random() * (w - margin * 2),
+        y: margin + Math.random() * (h - margin * 2)
+      };
+    }
+
+    function spawnBall() {
+      if (!playing) return;
+      if (activeBalls.length >= cfg.maxBalls) return;
+
+      const size = cfg.size;
+      const { x, y } = randBallPos(size);
+      const ball = document.createElement('div');
+      ball.className = 'aim-ball';
+      ball.style.width = size + 'px';
+      ball.style.height = size + 'px';
+      ball.style.left = (x - size / 2) + 'px';
+      ball.style.top = (y - size / 2) + 'px';
+
+      const ballData = { el: ball, x, y, size, createdAt: Date.now() };
+      activeBalls.push(ballData);
+
+      ball.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hitBall(ballData);
+      });
+
+      arena.appendChild(ball);
+
+      // 生命周期：超时自动消失（算"丢失"但不算失误）
+      ballData.timeoutId = setTimeout(() => {
+        removeBall(ballData);
+      }, cfg.lifespan);
+    }
+
+    function hitBall(ballData) {
+      clearTimeout(ballData.timeoutId);
+      ballData.el.classList.add('hit');
+      hits++;
+      updateStats();
+      // 命中特效：短暂震动 + 飘字
+      ballData.el.style.background = 'radial-gradient(circle at 30% 30%, #fef3c7, #fbbf24 60%, #d97706)';
+      const ms = document.createElement('div');
+      ms.className = 'aim-miss-flash';
+      ms.style.left = ballData.x + 'px';
+      ms.style.top = ballData.y + 'px';
+      ms.style.color = '#22c55e';
+      ms.textContent = '+' + Math.round(500 / cfg.size * 10);
+      arena.appendChild(ms);
+      setTimeout(() => ms.remove(), 700);
+
+      // 动画结束后移除 DOM
+      ballData.el.addEventListener('animationend', () => removeBall(ballData), { once: true });
+    }
+
+    function removeBall(ballData) {
+      const idx = activeBalls.indexOf(ballData);
+      if (idx >= 0) activeBalls.splice(idx, 1);
+      if (ballData.el.parentNode) ballData.el.parentNode.removeChild(ballData.el);
+    }
+
+    function onArenaClick(e) {
+      if (!playing) return;
+      // 只算点击 arena 背景，不算到球
+      if (e.target === arena) {
+        misses++;
+        updateStats();
+        // 失误飘字
+        const ms = document.createElement('div');
+        ms.className = 'aim-miss-flash';
+        ms.style.left = e.offsetX + 'px';
+        ms.style.top = e.offsetY + 'px';
+        ms.textContent = '✗';
+        arena.appendChild(ms);
+        setTimeout(() => ms.remove(), 700);
+      }
+    }
+
+    function scheduleSpawn() {
+      if (!playing) return;
+      const delay = cfg.spawnMin + Math.random() * (cfg.spawnMax - cfg.spawnMin);
+      spawnTimer = setTimeout(() => {
+        spawnBall();
+        scheduleSpawn();
+      }, delay);
+    }
+
+    function startGame() {
+      playing = true;
+      hits = 0; misses = 0;
+      activeBalls.forEach(b => b.el.remove());
+      activeBalls = [];
+      updateStats();
+      startScreen.style.display = 'none';
+      scheduleSpawn();
+    }
+
+    function stopGame() {
+      playing = false;
+      if (spawnTimer) clearTimeout(spawnTimer);
+      activeBalls.forEach(b => { clearTimeout(b.timeoutId); b.el.remove(); });
+      activeBalls = [];
+      startScreen.style.display = '';
+    }
+
+    // 事件绑定
+    arena.addEventListener('click', onArenaClick);
+    document.getElementById('aim-go').addEventListener('click', startGame);
+
+    // 难度切换
+    document.querySelectorAll('#aim-diff button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#aim-diff button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        diffKey = btn.dataset.diff;
+        cfg = DIFF[diffKey];
+        if (playing) { stopGame(); startGame(); } // 重启生效
+      });
+    });
+
+    // 空格键快速开始
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && !playing) {
+        e.preventDefault();
+        startGame();
+      }
+    });
+  </script>
+</body>
+</html>
