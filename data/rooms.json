@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-11-14T21:11:16.524462+00:00",
+  "updatedAt": "2026-11-14T21:21:17.609353+00:00",
   "totalRooms": 9,
   "activeRooms": 9,
-  "totalPlayers": 5,
+  "totalPlayers": 6,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -21,8 +21,8 @@
     {
       "ip": "51.91.101.151",
       "port": 10800,
-      "name": "SokuLobbies Public Vanilla Lobby \u0002",
-      "online": 2,
+      "name": "SokuLobbies Public Vanilla Lobby \u0003",
+      "online": 3,
       "capacity": 32
     },
     {
