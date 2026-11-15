@@ -3,7 +3,10 @@
   // 这样 iframe 内的页面切换不会销毁外层的 Audio 元素，音乐持续播放
   if (window.top !== window.self) return;
 
-  const base = (window.SITE_CONFIG && SITE_CONFIG.base) || '/';
+  // player.js 只在 shell（顶层 window）执行，ROOT_PREFIX 自动算 ''（根目录）
+  // 但为健壮性，保留 fallback
+  const base = (typeof ROOT_PREFIX !== 'undefined' && ROOT_PREFIX)
+    ? ROOT_PREFIX : ((window.SITE_CONFIG && SITE_CONFIG.base) || '/');
   const STORAGE_KEY = 'blog_music_state';
   const MUSIC_CACHE_KEY = 'blog_music_json';
   const MUSIC_CACHE_TTL = 60000;

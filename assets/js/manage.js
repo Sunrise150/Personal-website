@@ -1,5 +1,5 @@
 const STORAGE_KEY = 'blog_gh_settings';
-const POSTS_JSON = ROOT_PREFIX + 'data/posts.json';
+const POSTS_JSON = 'data/posts.json';  // GitHub API 路径，仓库根目录相对
 const POSTS_DIR = 'posts';
 
 /* ============ 性能优化：索引缓存 ============ */

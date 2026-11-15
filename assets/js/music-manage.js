@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'blog_gh_settings';
-const MUSIC_JSON = ROOT_PREFIX + 'data/music.json';
-const MUSIC_DIR = ROOT_PREFIX + 'assets/music';
+const MUSIC_JSON = 'data/music.json';    // GitHub API 路径，仓库根目录相对
+const MUSIC_DIR = 'assets/music';         // GitHub API 路径
 const MUSIC_MAX_MB = 25;
 const BRANCH_KEY = 'blog_gh_branch';
 
@@ -374,7 +374,8 @@ async function onPlay(i) {
     const item = list[i];
     if (!item) return;
     if (previewAudio) { previewAudio.pause(); previewAudio.src = ''; }
-    const base = SITE_CONFIG.base || '/';
+    const base = (typeof ROOT_PREFIX !== 'undefined' && ROOT_PREFIX)
+      ? ROOT_PREFIX : (SITE_CONFIG.base || '/');
     const src = /^https?:|^\//.test(item.src) ? item.src : base + item.src;
     previewAudio = new Audio(src);
     previewAudio.play().catch(e => alert('无法播放：' + e.message));

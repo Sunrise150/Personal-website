@@ -14,12 +14,15 @@ function readingTime(text) {
   return Math.max(1, Math.ceil((cn + en * 2) / 400));
 }
 
-// 修复图片路径：把相对路径补成 base 开头的绝对路径
+// 修复图片路径：把相对路径补成 ROOT_PREFIX 开头的正确路径
 function fixImagePaths(html) {
-  const base = SITE_CONFIG.base || '/';
+  // 优先用 ROOT_PREFIX（动态算当前页面到根的相对路径），fallback 到 SITE_CONFIG.base
+  const prefix = (typeof ROOT_PREFIX !== 'undefined' && ROOT_PREFIX)
+    ? ROOT_PREFIX
+    : (SITE_CONFIG.base || '/');
   return html.replace(
     /<img([^>]*?)src="(?!https?:|\/\/|\/|data:)([^"]+)"/g,
-    (m, attrs, src) => `<img${attrs}src="${base}${src}"`
+    (m, attrs, src) => `<img${attrs}src="${prefix}${src}"`
   );
 }
 
@@ -30,7 +33,7 @@ async function loadPost() {
   try {
     const [idxRes, mdRes] = await Promise.all([
       fetch(ROOT_PREFIX + 'data/posts.json?t=' + Date.now()),
-      fetch(`posts/${encodeURIComponent(slug)}.md?t=` + Date.now())
+      fetch(ROOT_PREFIX + `posts/${encodeURIComponent(slug)}.md?t=` + Date.now())
     ]);
     if (!idxRes.ok) throw new Error('无法加载文章索引 (' + idxRes.status + ')');
     if (!mdRes.ok) throw new Error(`找不到文件 posts/${slug}.md (${mdRes.status})`);

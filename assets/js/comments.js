@@ -5,8 +5,8 @@
  */
 
 const CMT_STORAGE_KEY = 'blog_gh_settings'; // 复用 write.js 的 key
-const CMT_IMG_DIR = ROOT_PREFIX + 'assets/comments/images';
-const CMT_FILE_DIR = ROOT_PREFIX + 'assets/comments/files';
+const CMT_IMG_DIR = 'assets/comments/images';   // GitHub API 路径
+const CMT_FILE_DIR = 'assets/comments/files';   // GitHub API 路径
 
 let _currentSlug = null;
 let _comments = [];
@@ -221,7 +221,8 @@ async function cmtUploadAttachment(file, kind, slug) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || `附件上传失败 (${res.status})`);
   }
-  const base = SITE_CONFIG.base || '/';
+  const base = (typeof ROOT_PREFIX !== 'undefined' && ROOT_PREFIX)
+    ? ROOT_PREFIX : (SITE_CONFIG.base || '/');
   return { type: kind, url: `${base}${path}`, name: file.name };
 }
 

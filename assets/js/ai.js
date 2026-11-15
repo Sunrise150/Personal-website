@@ -12,10 +12,10 @@
 (function () {
   const POSTS_JSON = ROOT_PREFIX + 'data/posts.json?t=' + Date.now();
   const QA_DICT_JSON = ROOT_PREFIX + 'data/qa-dict.json?t=' + Date.now();
-  const BIG_DICT_JSON = 'words/可爱系二次元bot词库1.5万词V1.2.json?t=' + Date.now();
-  const EXTRA_DICT_JSON = 'words/extra-dict.json?t=' + Date.now();
-  const KLBQ_DICT_JSON = 'words/klbq-dict.json?t=' + Date.now();
-  const POSTS_DIR = 'posts/';
+  const BIG_DICT_JSON = ROOT_PREFIX + 'words/可爱系二次元bot词库1.5万词V1.2.json?t=' + Date.now();
+  const EXTRA_DICT_JSON = ROOT_PREFIX + 'words/extra-dict.json?t=' + Date.now();
+  const KLBQ_DICT_JSON = ROOT_PREFIX + 'words/klbq-dict.json?t=' + Date.now();
+  const POSTS_DIR = ROOT_PREFIX + 'posts/';
   const HISTORY_KEY = 'blog_qa_history';
   const MAX_HISTORY = 30;
 
