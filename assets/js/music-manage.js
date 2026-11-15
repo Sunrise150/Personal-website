@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'blog_gh_settings';
-const MUSIC_JSON = 'data/music.json';
-const MUSIC_DIR = 'assets/music';
+const MUSIC_JSON = ROOT_PREFIX + 'data/music.json';
+const MUSIC_DIR = ROOT_PREFIX + 'assets/music';
 const MUSIC_MAX_MB = 25;
 const BRANCH_KEY = 'blog_gh_branch';
 

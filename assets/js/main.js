@@ -71,7 +71,7 @@ function initPostSearch() {
 async function renderPosts() {
   const list = document.getElementById('post-list');
   try {
-    const res = await fetch('data/posts.json?t=' + Date.now());
+    const res = await fetch(ROOT_PREFIX + 'data/posts.json?t=' + Date.now());
     if (!res.ok) throw new Error('无法加载文章列表');
     ALL_POSTS = await res.json();
     // 排序：置顶 > 日期降序；同一天按 slug 中的时间戳降序（后发布的在前）

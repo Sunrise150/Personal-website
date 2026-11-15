@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'blog_gh_settings';
-const IMG_DIR = 'assets/images';
-const FILE_DIR = 'assets/files';
+const IMG_DIR = ROOT_PREFIX + 'assets/images';
+const FILE_DIR = ROOT_PREFIX + 'assets/files';
 const DRAFT_KEY = 'blog_article_draft'; // 自动保存草稿
 
 /* ============ 草稿态：暂存图片和文件，发布时一起上传到 slug 子目录 ============ */

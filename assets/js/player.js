@@ -349,7 +349,8 @@
       if (subPath.endsWith('/snake.html') || subPath.endsWith('/tetris.html') ||
           subPath.endsWith('/minesweeper.html') || subPath.endsWith('/sudoku.html') ||
           subPath.endsWith('/fighter.html') || subPath.endsWith('/pacman.html') ||
-          subPath.endsWith('/sokoban.html')) return;
+          subPath.endsWith('/sokoban.html') || subPath.endsWith('/aim.html') ||
+          subPath.endsWith('/tank.html')) return;
     } catch (e) {}
     setMode('peek');
     clearTimeout(peekTimer);
@@ -586,7 +587,7 @@
 
   (async function initAsync() {
     try {
-      const res = await fetch('data/music.json?t=' + Date.now());
+      const res = await fetch(ROOT_PREFIX + 'data/music.json?t=' + Date.now());
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {

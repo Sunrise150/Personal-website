@@ -5,8 +5,8 @@
  */
 
 const CMT_STORAGE_KEY = 'blog_gh_settings'; // 复用 write.js 的 key
-const CMT_IMG_DIR = 'assets/comments/images';
-const CMT_FILE_DIR = 'assets/comments/files';
+const CMT_IMG_DIR = ROOT_PREFIX + 'assets/comments/images';
+const CMT_FILE_DIR = ROOT_PREFIX + 'assets/comments/files';
 
 let _currentSlug = null;
 let _comments = [];
@@ -46,7 +46,7 @@ async function cmtLoad() {
   if (!_currentSlug) return;
   const list = $('comments-list');
   try {
-    const res = await fetch(`data/comments-${_currentSlug}.json?t=` + Date.now());
+    const res = await fetch(ROOT_PREFIX + `data/comments-${_currentSlug}.json?t=` + Date.now());
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data)) {
@@ -227,7 +227,7 @@ async function cmtUploadAttachment(file, kind, slug) {
 
 async function cmtFetchExistingSha() {
   const settings = cmtGetSettings();
-  const path = `data/comments-${_currentSlug}.json`;
+  const path = ROOT_PREFIX + `data/comments-${_currentSlug}.json`;
   const url = `https://api.github.com/repos/${settings.owner}/${settings.repo}/contents/${path}`;
   const res = await fetch(url, {
     headers: { 'Authorization': `token ${settings.token}`, 'Accept': 'application/vnd.github.v3+json' }
@@ -272,14 +272,14 @@ async function cmtSubmitComment({ name, body, replyTo, attachments }) {
     // 先拉取最新评论（避免覆盖其他人的提交）
     let latestList = [];
     try {
-      const res = await fetch(`data/comments-${_currentSlug}.json?t=` + Date.now());
+      const res = await fetch(ROOT_PREFIX + `data/comments-${_currentSlug}.json?t=` + Date.now());
       if (res.ok) latestList = await res.json();
     } catch (e) {}
     if (!Array.isArray(latestList)) latestList = [];
     latestList.push(comment);
 
     const content = encodeBase64(JSON.stringify(latestList, null, 2));
-    const path = `data/comments-${_currentSlug}.json`;
+    const path = ROOT_PREFIX + `data/comments-${_currentSlug}.json`;
     const url = `https://api.github.com/repos/${settings.owner}/${settings.repo}/contents/${path}`;
     // 获取现有 sha（更新而不是创建）
     let sha;

@@ -59,7 +59,7 @@ async function loadRooms() {
   const hint = document.getElementById('rooms-footer-hint');
 
   try {
-    const res = await fetch('data/rooms.json?t=' + Date.now());
+    const res = await fetch(ROOT_PREFIX + 'data/rooms.json?t=' + Date.now());
     if (!res.ok) throw new Error('无法加载房间数据 (' + res.status + ')');
 
     const data = await res.json();

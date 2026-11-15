@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/style.css?v=4">
+  <link rel="stylesheet" href="../assets/css/style.css?v=4">
   <style>
     html, body { margin: 0; }
     body { display: flex; flex-direction: column; min-height: 100vh; }
@@ -186,11 +186,11 @@
     </div>
   </footer>
 
-  <script src="assets/js/config.js?v=4"></script>
-  <script src="assets/js/site-stats.js?v=1"></script>
-  <script src="assets/js/player.js?v=15"></script>
-  <script src="assets/js/visualizer.js?v=1"></script>
-  <script src="assets/js/ai.js?v=5"></script>
+  <script src="../assets/js/config.js?v=4"></script>
+  <script src="../assets/js/site-stats.js?v=1"></script>
+  <script src="../assets/js/player.js?v=15"></script>
+  <script src="../assets/js/visualizer.js?v=1"></script>
+  <script src="../assets/js/ai.js?v=5"></script>
   <script>
     (function applyShellConfig() {
       const t = document.getElementById('site-title');
@@ -308,7 +308,7 @@
             iframeDoc._shellClickBound = true;
             iframeDoc.addEventListener('click', (e) => {
               if (window.__blogPlayer) window.__blogPlayer.collapse();
-              const a = e.target.closest && e.target.closest('a[href="index.html"]');
+              const a = e.target.closest && e.target.closest('a[href="index.html"], a[href="../root/index.html"]');
               if (a) {
                 e.preventDefault();
                 frame.src = 'home.html';

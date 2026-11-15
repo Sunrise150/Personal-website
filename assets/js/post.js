@@ -29,7 +29,7 @@ async function loadPost() {
 
   try {
     const [idxRes, mdRes] = await Promise.all([
-      fetch('data/posts.json?t=' + Date.now()),
+      fetch(ROOT_PREFIX + 'data/posts.json?t=' + Date.now()),
       fetch(`posts/${encodeURIComponent(slug)}.md?t=` + Date.now())
     ]);
     if (!idxRes.ok) throw new Error('无法加载文章索引 (' + idxRes.status + ')');

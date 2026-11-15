@@ -10,8 +10,8 @@
  *      - 加载所有文章 → 关键词打分 → 返回相关文章
  */
 (function () {
-  const POSTS_JSON = 'data/posts.json?t=' + Date.now();
-  const QA_DICT_JSON = 'data/qa-dict.json?t=' + Date.now();
+  const POSTS_JSON = ROOT_PREFIX + 'data/posts.json?t=' + Date.now();
+  const QA_DICT_JSON = ROOT_PREFIX + 'data/qa-dict.json?t=' + Date.now();
   const BIG_DICT_JSON = 'words/可爱系二次元bot词库1.5万词V1.2.json?t=' + Date.now();
   const EXTRA_DICT_JSON = 'words/extra-dict.json?t=' + Date.now();
   const KLBQ_DICT_JSON = 'words/klbq-dict.json?t=' + Date.now();
