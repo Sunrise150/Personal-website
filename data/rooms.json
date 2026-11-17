@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-11-17T00:01:10.907625+00:00",
+  "updatedAt": "2026-11-17T00:11:10.763668+00:00",
   "totalRooms": 9,
   "activeRooms": 9,
-  "totalPlayers": 4,
+  "totalPlayers": 5,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -21,15 +21,15 @@
     {
       "ip": "51.91.101.151",
       "port": 10800,
-      "name": "SokuLobbies Public Vanilla Lobby \u0003",
-      "online": 3,
+      "name": "SokuLobbies Public Vanilla Lobby \u0002",
+      "online": 2,
       "capacity": 32
     },
     {
       "ip": "94.103.3.82",
       "port": 10800,
       "name": "Ru | Melon lobby",
-      "online": 0,
+      "online": 2,
       "capacity": 24
     },
     {
