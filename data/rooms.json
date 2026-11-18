@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-11-17T23:51:13.848334+00:00",
-  "totalRooms": 10,
-  "activeRooms": 10,
-  "totalPlayers": 5,
+  "updatedAt": "2026-11-18T00:01:11.510567+00:00",
+  "totalRooms": 9,
+  "activeRooms": 9,
+  "totalPlayers": 6,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -15,7 +15,7 @@
       "ip": "51.91.101.151",
       "port": 10801,
       "name": "SokuLobbies Public Tag Lobby",
-      "online": 2,
+      "online": 3,
       "capacity": 32
     },
     {
@@ -66,13 +66,6 @@
       "name": "[CN 2]/report举报各种问题",
       "online": 0,
       "capacity": 70
-    },
-    {
-      "ip": "178.174.147.208",
-      "port": 9001,
-      "name": "Touhou Sweden - Weekly Lobbies",
-      "online": 0,
-      "capacity": 15
     }
   ]
 }
