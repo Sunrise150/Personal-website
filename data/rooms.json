@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-11-18T16:51:18.668899+00:00",
-  "totalRooms": 10,
-  "activeRooms": 10,
-  "totalPlayers": 40,
+  "updatedAt": "2026-11-18T17:01:12.404926+00:00",
+  "totalRooms": 9,
+  "activeRooms": 9,
+  "totalPlayers": 41,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -21,8 +21,8 @@
     {
       "ip": "51.91.101.151",
       "port": 10800,
-      "name": "SokuLobbies Public Vanilla Lobby \u0002",
-      "online": 2,
+      "name": "SokuLobbies Public Vanilla Lobby \u0005",
+      "online": 5,
       "capacity": 32
     },
     {
@@ -66,13 +66,6 @@
       "name": "[TEST]",
       "online": 0,
       "capacity": 12
-    },
-    {
-      "ip": "51.161.34.159",
-      "port": 18000,
-      "name": "The Sekrit Club",
-      "online": 2,
-      "capacity": 32
     }
   ]
 }
