@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-11-19T23:21:10.413005+00:00",
+  "updatedAt": "2026-11-19T23:31:10.625815+00:00",
   "totalRooms": 10,
   "activeRooms": 10,
   "totalPlayers": 6,
@@ -57,14 +57,14 @@
       "ip": "43.136.23.115",
       "port": 6005,
       "name": "[CN 3]好多人啊",
-      "online": 3,
+      "online": 2,
       "capacity": 70
     },
     {
       "ip": "51.161.34.159",
       "port": 18000,
       "name": "Lebanese Grill & Karaoke",
-      "online": 3,
+      "online": 4,
       "capacity": 24
     },
     {
