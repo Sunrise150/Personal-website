@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-11-21T11:31:12.527966+00:00",
-  "totalRooms": 9,
-  "activeRooms": 9,
-  "totalPlayers": 90,
+  "updatedAt": "2026-11-21T11:41:13.760396+00:00",
+  "totalRooms": 10,
+  "activeRooms": 10,
+  "totalPlayers": 96,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -43,21 +43,21 @@
       "ip": "43.136.23.115",
       "port": 6003,
       "name": "[CN 2]/report举报各种问题",
-      "online": 22,
+      "online": 19,
       "capacity": 70
     },
     {
       "ip": "43.136.23.115",
       "port": 6005,
       "name": "[CN 3]好多人啊",
-      "online": 55,
+      "online": 56,
       "capacity": 70
     },
     {
       "ip": "43.136.23.115",
       "port": 6001,
       "name": "[CN 1] WIKI.514.LIVE",
-      "online": 13,
+      "online": 21,
       "capacity": 70
     },
     {
@@ -66,6 +66,13 @@
       "name": "[TEST]",
       "online": 0,
       "capacity": 12
+    },
+    {
+      "ip": "51.161.34.159",
+      "port": 18000,
+      "name": "Lebanese Grill & Karaoke Bar",
+      "online": 0,
+      "capacity": 24
     }
   ]
 }
