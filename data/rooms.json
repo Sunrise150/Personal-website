@@ -1,14 +1,14 @@
 {
-  "updatedAt": "2026-11-22T23:21:13.705784+00:00",
-  "totalRooms": 10,
-  "activeRooms": 10,
-  "totalPlayers": 6,
+  "updatedAt": "2026-11-22T23:31:12.215712+00:00",
+  "totalRooms": 9,
+  "activeRooms": 9,
+  "totalPlayers": 7,
   "rooms": [
     {
       "ip": "51.91.101.151",
       "port": 10802,
       "name": "Clan War Lobby",
-      "online": 2,
+      "online": 3,
       "capacity": 48
     },
     {
@@ -57,7 +57,7 @@
       "ip": "51.161.34.159",
       "port": 18000,
       "name": "Lebanese Grill & Karaoke Bar",
-      "online": 1,
+      "online": 3,
       "capacity": 24
     },
     {
@@ -66,13 +66,6 @@
       "name": "[CN 1] WIKI.514.LIVE",
       "online": 1,
       "capacity": 70
-    },
-    {
-      "ip": "51.161.34.159",
-      "port": 18005,
-      "name": "Testing",
-      "online": 2,
-      "capacity": 4
     }
   ]
 }
