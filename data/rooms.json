@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-11-22T17:01:12.631226+00:00",
-  "totalRooms": 10,
-  "activeRooms": 10,
-  "totalPlayers": 34,
+  "updatedAt": "2026-11-22T17:11:13.250828+00:00",
+  "totalRooms": 9,
+  "activeRooms": 9,
+  "totalPlayers": 30,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -21,15 +21,15 @@
     {
       "ip": "51.91.101.151",
       "port": 10800,
-      "name": "SokuLobbies Public Vanilla Lobby \u0004",
-      "online": 4,
+      "name": "SokuLobbies Public Vanilla Lobby \u0005",
+      "online": 5,
       "capacity": 32
     },
     {
       "ip": "94.103.3.82",
       "port": 10800,
       "name": "Ru | Melon lobby",
-      "online": 5,
+      "online": 4,
       "capacity": 24
     },
     {
@@ -49,15 +49,15 @@
     {
       "ip": "43.136.23.115",
       "port": 6008,
-      "name": "[CN 2]请更新大厅0.7.7版本F\u0010",
-      "online": 16,
+      "name": "[CN 2]请更新大厅0.7.7版本F",
+      "online": 12,
       "capacity": 70
     },
     {
       "ip": "51.161.34.159",
       "port": 18000,
       "name": "Lebanese Grill & Karaoke Bar",
-      "online": 3,
+      "online": 4,
       "capacity": 24
     },
     {
@@ -66,13 +66,6 @@
       "name": "[CN 1] WIKI.514.LIVE",
       "online": 2,
       "capacity": 70
-    },
-    {
-      "ip": "51.161.34.159",
-      "port": 18005,
-      "name": "Testing!",
-      "online": 1,
-      "capacity": 4
     }
   ]
 }
