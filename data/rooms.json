@@ -1,7 +1,7 @@
 {
-  "updatedAt": "2026-11-22T22:31:19.535057+00:00",
+  "updatedAt": "2026-11-22T22:41:09.590191+00:00",
   "totalRooms": 9,
-  "activeRooms": 8,
+  "activeRooms": 9,
   "totalPlayers": 6,
   "rooms": [
     {
@@ -28,9 +28,9 @@
     {
       "ip": "94.103.3.82",
       "port": 10800,
-      "name": "无法获取",
+      "name": "Ru | Melon lobby",
       "online": 0,
-      "capacity": 0
+      "capacity": 24
     },
     {
       "ip": "31.210.172.40",
