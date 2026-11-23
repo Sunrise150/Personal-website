@@ -1,14 +1,14 @@
 {
-  "updatedAt": "2026-11-23T16:11:13.326709+00:00",
+  "updatedAt": "2026-11-23T16:21:19.892346+00:00",
   "totalRooms": 9,
   "activeRooms": 9,
-  "totalPlayers": 48,
+  "totalPlayers": 25,
   "rooms": [
     {
       "ip": "51.91.101.151",
       "port": 10802,
       "name": "Clan War Lobby",
-      "online": 1,
+      "online": 0,
       "capacity": 48
     },
     {
@@ -21,8 +21,8 @@
     {
       "ip": "51.91.101.151",
       "port": 10800,
-      "name": "SokuLobbies Public Vanilla Lobby \u0002",
-      "online": 2,
+      "name": "SokuLobbies Public Vanilla Lobby \u0001",
+      "online": 1,
       "capacity": 32
     },
     {
@@ -40,17 +40,10 @@
       "capacity": 32
     },
     {
-      "ip": "43.136.23.115",
-      "port": 6002,
-      "name": "[CN 1] WIKI.514.LIVE",
-      "online": 39,
-      "capacity": 70
-    },
-    {
       "ip": "51.161.34.159",
       "port": 18000,
       "name": "Lebanese Grill & Karaoke Bar",
-      "online": 3,
+      "online": 4,
       "capacity": 24
     },
     {
@@ -65,6 +58,13 @@
       "port": 6012,
       "name": "[CN 3]好多人啊",
       "online": 3,
+      "capacity": 70
+    },
+    {
+      "ip": "43.136.23.115",
+      "port": 6001,
+      "name": "[CN 1] WIKI.514.LIVE",
+      "online": 17,
       "capacity": 70
     }
   ]
