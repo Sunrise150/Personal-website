@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-11-23T20:41:11.106518+00:00",
+  "updatedAt": "2026-11-23T20:51:12.263196+00:00",
   "totalRooms": 9,
   "activeRooms": 9,
-  "totalPlayers": 9,
+  "totalPlayers": 8,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -64,7 +64,7 @@
       "ip": "51.161.34.159",
       "port": 18000,
       "name": "Lebanese Grill & Karaoke Bar",
-      "online": 3,
+      "online": 2,
       "capacity": 24
     }
   ]
