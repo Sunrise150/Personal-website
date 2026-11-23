@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-11-23T00:21:12.271421+00:00",
+  "updatedAt": "2026-11-23T00:31:11.824551+00:00",
   "totalRooms": 9,
   "activeRooms": 9,
-  "totalPlayers": 6,
+  "totalPlayers": 5,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -21,8 +21,8 @@
     {
       "ip": "51.91.101.151",
       "port": 10800,
-      "name": "SokuLobbies Public Vanilla Lobby \u0003",
-      "online": 3,
+      "name": "SokuLobbies Public Vanilla Lobby \u0002",
+      "online": 2,
       "capacity": 32
     },
     {
@@ -57,14 +57,14 @@
       "ip": "43.136.23.115",
       "port": 6002,
       "name": "[CN 1] WIKI.514.LIVE",
-      "online": 3,
+      "online": 2,
       "capacity": 70
     },
     {
       "ip": "51.161.34.159",
       "port": 18000,
       "name": "Lebanese Grill & Karaoke Bar",
-      "online": 0,
+      "online": 1,
       "capacity": 24
     }
   ]
