@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-11-26T00:11:09.499024+00:00",
+  "updatedAt": "2026-11-26T00:21:09.879471+00:00",
   "totalRooms": 9,
   "activeRooms": 9,
-  "totalPlayers": 7,
+  "totalPlayers": 8,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -21,16 +21,9 @@
     {
       "ip": "51.91.101.151",
       "port": 10800,
-      "name": "SokuLobbies Public Vanilla Lobby \u0002",
-      "online": 2,
+      "name": "SokuLobbies Public Vanilla Lobby \u0003",
+      "online": 3,
       "capacity": 32
-    },
-    {
-      "ip": "94.103.3.82",
-      "port": 10800,
-      "name": "Ru | Melon lobby",
-      "online": 0,
-      "capacity": 24
     },
     {
       "ip": "31.210.172.40",
@@ -65,6 +58,13 @@
       "port": 18000,
       "name": "Lebanese Grill & Karaoke Bar",
       "online": 2,
+      "capacity": 24
+    },
+    {
+      "ip": "94.103.3.82",
+      "port": 10800,
+      "name": "Ru | Melon lobby",
+      "online": 0,
       "capacity": 24
     }
   ]
