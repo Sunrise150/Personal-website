@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-11-26T10:31:11.888216+00:00",
-  "totalRooms": 10,
+  "updatedAt": "2026-11-26T10:41:13.091672+00:00",
+  "totalRooms": 9,
   "activeRooms": 9,
-  "totalPlayers": 51,
+  "totalPlayers": 54,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -43,7 +43,7 @@
       "ip": "43.136.23.115",
       "port": 6012,
       "name": "[CN 3]好多人啊",
-      "online": 45,
+      "online": 49,
       "capacity": 70
     },
     {
@@ -54,13 +54,6 @@
       "capacity": 70
     },
     {
-      "ip": "51.161.34.159",
-      "port": 18000,
-      "name": "Lebanese Grill & Karaoke Bar",
-      "online": 2,
-      "capacity": 24
-    },
-    {
       "ip": "94.103.3.82",
       "port": 10800,
       "name": "Ru | Melon lobby",
@@ -68,11 +61,11 @@
       "capacity": 24
     },
     {
-      "ip": "43.136.23.115",
-      "port": 63488,
-      "name": "无法获取",
-      "online": 0,
-      "capacity": 0
+      "ip": "51.161.34.159",
+      "port": 18000,
+      "name": "Lebanese Grill & Karaoke Bar",
+      "online": 1,
+      "capacity": 24
     }
   ]
 }
