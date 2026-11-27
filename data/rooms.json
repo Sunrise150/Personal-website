@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-11-27T12:11:13.039495+00:00",
+  "updatedAt": "2026-11-27T12:21:11.520756+00:00",
   "totalRooms": 9,
   "activeRooms": 9,
-  "totalPlayers": 97,
+  "totalPlayers": 98,
   "rooms": [
     {
       "ip": "51.91.101.151",
@@ -36,14 +36,14 @@
       "ip": "43.136.23.115",
       "port": 6012,
       "name": "[CN 3]好多人啊",
-      "online": 67,
+      "online": 68,
       "capacity": 70
     },
     {
       "ip": "43.136.23.115",
       "port": 6001,
       "name": "[CN 1] WIKI.514.LIVE",
-      "online": 1,
+      "online": 0,
       "capacity": 70
     },
     {
@@ -57,7 +57,7 @@
       "ip": "43.136.23.115",
       "port": 6009,
       "name": "[CN 2]请更新大厅0.7.7版本F",
-      "online": 29,
+      "online": 30,
       "capacity": 70
     },
     {
